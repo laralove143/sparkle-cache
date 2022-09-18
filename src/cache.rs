@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use thiserror::Error;
 use twilight_model::{
+    channel::{Channel, ChannelType},
     gateway::event::Event,
     guild::auto_moderation::AutoModerationRule,
     id::{
@@ -60,19 +61,37 @@ where
             Event::AutoModerationRuleDelete(rule) => {
                 self.remove_auto_moderation_rule(rule.id).await?;
             }
-            // Event::BanAdd(_) => {}
-            // Event::BanRemove(_) => {}
-            // Event::ChannelCreate(_) => {}
-            // Event::ChannelDelete(_) => {}
-            // Event::ChannelPinsUpdate(_) => {}
-            // Event::ChannelUpdate(_) => {}
-            // Event::CommandPermissionsUpdate(_) => {}
-            // Event::GatewayHeartbeat(_) => {}
-            // Event::GatewayHeartbeatAck => {}
-            // Event::GatewayHello(_) => {}
-            // Event::GatewayInvalidateSession(_) => {}
-            // Event::GatewayReconnect => {}
-            // Event::GiftCodeUpdate => {}
+            Event::BanAdd(ban) => {
+                self.add_ban(ban.guild_id, ban.user.id).await?;
+            }
+            Event::BanRemove(ban) => {
+                self.remove_ban(ban.guild_id, ban.user.id).await?;
+            }
+            Event::ChannelCreate(channel) => {
+                if channel.kind == ChannelType::Private {
+                    let recipient_user_id =
+                        private_channel_recipient(self.current_user().await?.id, channel)?;
+                    self.add_private_channel(channel.id, recipient_user_id)
+                        .await?;
+                } else {
+                    self.upsert_channel((*channel.clone()).0).await?;
+                }
+            }
+            Event::ChannelDelete(channel) => {
+                if channel.kind == ChannelType::Private {
+                    let recipient_user_id =
+                        private_channel_recipient(self.current_user().await?.id, channel)?;
+                    self.remove_private_channel(channel.id, recipient_user_id)
+                        .await?;
+                } else {
+                    self.remove_channel(channel.id).await?;
+                }
+            }
+            Event::ChannelUpdate(channel) => {
+                if channel.kind != ChannelType::Private {
+                    self.upsert_channel((*channel.clone()).0).await?;
+                }
+            }
             // Event::GuildDelete(_) => {}
             // Event::GuildCreate(_) => {}
             // Event::GuildEmojisUpdate(_) => {}
@@ -144,5 +163,25 @@ where
     async fn auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<AutoModerationRule, Self::Error>;
+    ) -> Result<AutoModerationRule, Error<Self>>;
+}
+
+/// Given a [`twilight_model::channel::ChannelType::Private`] returns the first
+/// recipient's ID that's not the current user
+///
+/// # Errors
+///
+/// Returns [`Error::PrivateChannelMissingRecipient`], also clones the channel
+/// to create the error
+fn private_channel_recipient<T: Backend>(
+    current_user_id: Id<UserMarker>,
+    channel: &Channel,
+) -> Result<Id<UserMarker>, Error<T>> {
+    let recipient_user_id = channel
+        .recipients
+        .as_ref()
+        .and_then(|recipients| recipients.iter().find(|user| user.id == current_user_id))
+        .ok_or_else(|| Error::PrivateChannelMissingRecipient(channel.clone()))?
+        .id;
+    Ok(recipient_user_id)
 }

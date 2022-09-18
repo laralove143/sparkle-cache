@@ -15,6 +15,18 @@ pub trait Cache: Backend {
     /// Update the cache with the given event, should be called for every event
     /// to keep the cache valid
     ///
+    /// # Warnings
+    ///
+    /// Channel's `last_message_id` is invalid as it would mean updating the
+    /// channel in the cache for every message, to get a channel's last message,
+    /// use [`self::channel_messages`]
+    ///
+    /// # Clones
+    ///
+    /// Many events don't require the event to be cloned, so the event parameter
+    /// is taken by a reference, if an event does require a clone (usually
+    /// add and update events), it will clone the required data implicitly
+    ///
     /// # Errors
     ///
     /// Returns the error the backend might return

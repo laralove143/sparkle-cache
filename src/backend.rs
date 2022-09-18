@@ -6,7 +6,8 @@ use twilight_model::{
 
 /// Provides methods to add or replace data in the cache
 ///
-/// This is for adding support for a backend
+/// This is for adding support for a backend, users of the cache itself only
+/// need the methods in [`super::cache::Cache`]
 ///
 /// # This trait is not complete
 ///

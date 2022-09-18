@@ -59,7 +59,8 @@
     clippy::unwrap_used,
     clippy::multiple_inherent_impl,
     clippy::pattern_type_mismatch,
-    clippy::wildcard_enum_match_arm
+    clippy::wildcard_enum_match_arm,
+    clippy::exhaustive_enums
 )]
 #![doc = include_str!("../README.md")]
 

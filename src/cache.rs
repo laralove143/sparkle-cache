@@ -44,6 +44,10 @@ where
     /// # Errors
     ///
     /// Returns the error the backend might return
+    ///
+    /// On `ChannelCreate`, `ChannelUpdate` and `ChannelDelete` events when the
+    /// channel is a DM channel, might return
+    /// [`Error::PrivateChannelMissingRecipient`]
     async fn update(&self, event: &Event) -> Result<(), Error<Self>> {
         match event {
             Event::AutoModerationRuleCreate(rule) => {
@@ -71,6 +75,11 @@ where
                     self.upsert_channel((&(*channel).0).into()).await?;
                 }
             }
+            Event::ChannelUpdate(channel) => {
+                if channel.kind != ChannelType::Private {
+                    self.upsert_channel((&(*channel).0).into()).await?;
+                }
+            }
             Event::ChannelDelete(channel) => {
                 if channel.kind == ChannelType::Private {
                     let recipient_user_id =
@@ -79,11 +88,6 @@ where
                         .await?;
                 } else {
                     self.remove_channel(channel.id).await?;
-                }
-            }
-            Event::ChannelUpdate(channel) => {
-                if channel.kind != ChannelType::Private {
-                    self.upsert_channel((&(*channel).0).into()).await?;
                 }
             }
             // Event::GuildDelete(_) => {}

@@ -19,11 +19,52 @@ use crate::{cache, model::CachedChannel};
 ///
 /// # This trait is not complete
 ///
-/// You should also add a method to expose the backend so that users can filter
-/// the results in the query, for example `SELECT *  FROM users WHERE name = ?`
+/// You should expose the backend so that users can filter the results in the
+/// query, for example they can do `SELECT *  FROM users WHERE name = ?`
 ///
-/// You should also implement your backend library's traits to (de)serialize
-/// Discord models for the backend
+/// It's also advisable to implement your backend library's traits to
+/// (de)serialize Discord models for the backend to streamline your codebase
+///
+/// Creating indexes for every ID field/column (for example, both `user_id` and
+/// `guild_id` in `users`) will be a huge performance improvement
+///
+/// # Example
+///
+/// Though the example uses PostgresSQL, you can use this library with any SQL
+/// or NoSQL backend
+///
+/// ```ignore
+/// use twilight_cache::backend::Backend;
+/// use twilight_model::id::{
+///     marker::{GuildMarker, UserMarker},
+///     Id,
+/// };
+/// struct MyCache {
+///     pub db: sql_library::Database, // Or add a getter method instead of making the field public
+/// };
+/// impl MyCache {
+///     fn new() {
+///         let db = sql_library::Database::connect("postgresql://localhost/discord");
+///         db.query("CREATE INDEX bans_guild_id_index ON bans (guild_id);");
+///         db.query("CREATE INDEX bans_user_id_index ON bans (user_id);");
+///     }
+/// }
+/// impl Backend for MyCache {
+///     async fn add_ban(
+///         &self,
+///         guild_id: Id<GuildMarker>,
+///         user_id: Id<UserMarker>,
+///     ) -> Result<(), Self::Error> {
+///         self.db
+///             .query("INSERT INTO bans (guild_id, user_id) VALUES ($guild_id, $user_id)");
+///         Ok(())
+///     }
+///     // Implement other methods similarly
+/// }
+/// impl Cache for MyCache {
+///     // Implement the methods here, usually using getter queries
+/// }
+/// ```
 #[async_trait]
 pub trait Backend: Sized {
     /// The error the cache's backend could return

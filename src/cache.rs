@@ -30,6 +30,14 @@ pub enum Error<B: Backend> {
 /// Provides methods to update the cache and get data from it
 ///
 /// This is for the users of the cache
+///
+/// # Example
+///
+/// ```ignore
+/// use twilight_model::id::Id;
+/// cache.update(&event);
+/// let channel = cache.channel(Id::new(123)).await?.unwrap();
+/// ```
 #[async_trait]
 pub trait Cache: Backend
 where
@@ -93,8 +101,8 @@ where
                     self.remove_channel(channel.id).await?;
                 }
             }
-            // Event::GuildDelete(_) => {}
             // Event::GuildCreate(_) => {}
+            // Event::GuildDelete(_) => {}
             // Event::GuildEmojisUpdate(_) => {}
             // Event::GuildIntegrationsUpdate(_) => {}
             // Event::GuildScheduledEventCreate(_) => {}

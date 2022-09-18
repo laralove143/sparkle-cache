@@ -22,6 +22,9 @@ pub enum Error<B: Backend> {
     /// The DM channel doesn't have any recipients other than the bot itself
     #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
     PrivateChannelMissingRecipient(Channel),
+    /// The current user isn't in the cache
+    #[error("The current user isn't in the cache")]
+    CurrentUserMissing,
 }
 
 /// Provides methods to update the cache and get data from it
@@ -155,6 +158,11 @@ where
     }
 
     /// Get the current user information of the bot
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::CurrentUserMissing`] when called before the ready event
+    /// is received
     async fn current_user(&self) -> Result<CurrentUser, Error<Self>>;
 
     /// Get a cached channel by its ID

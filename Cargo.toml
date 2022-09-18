@@ -12,3 +12,4 @@ categories = ["api-bindings", "asynchronous", "caching"]
 [dependencies]
 twilight-model = "0.13"
 async-trait = "0.1"
+thiserror = "1.0"

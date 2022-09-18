@@ -1,17 +1,36 @@
 use async_trait::async_trait;
+use thiserror::Error;
 use twilight_model::{
     gateway::event::Event,
     guild::auto_moderation::AutoModerationRule,
-    id::{marker::AutoModerationRuleMarker, Id},
+    id::{
+        marker::{AutoModerationRuleMarker, UserMarker},
+        Id,
+    },
+    user::CurrentUser,
 };
 
 use crate::backend::Backend;
+
+/// The errors the cache might return
+#[derive(Error, Debug)]
+pub enum Error<B: Backend> {
+    /// An error was returned by the backend
+    #[error("An error was returned by the backend:\n{0}")]
+    Backend(B::Error),
+    /// The DM channel doesn't have any recipients other than the bot itself
+    #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
+    PrivateChannelMissingRecipient(Channel),
+}
 
 /// Provides methods to update the cache and get data from it
 ///
 /// This is for the users of the cache
 #[async_trait]
-pub trait Cache: Backend {
+pub trait Cache: Backend
+where
+    Error<Self>: From<<Self as Backend>::Error>,
+{
     /// Update the cache with the given event, should be called for every event
     /// to keep the cache valid
     ///
@@ -30,7 +49,7 @@ pub trait Cache: Backend {
     /// # Errors
     ///
     /// Returns the error the backend might return
-    async fn update(&self, event: &Event) -> Result<(), Self::Error> {
+    async fn update(&self, event: &Event) -> Result<(), Error<Self>> {
         match event {
             Event::AutoModerationRuleCreate(rule) => {
                 self.upsert_auto_moderation_rule((*rule.clone()).0).await?;
@@ -117,6 +136,9 @@ pub trait Cache: Backend {
 
         Ok(())
     }
+
+    /// Get the current user information of the bot
+    async fn current_user(&self) -> Result<CurrentUser, Error<Self>>;
 
     /// Get an auto moderation rule by its ID
     async fn auto_moderation_rule(

@@ -154,19 +154,22 @@ where
     async fn current_user(&self) -> Result<CurrentUser, Error<Self>>;
 
     /// Get a cached channel by its ID
-    async fn channel(&self, channel_id: Id<ChannelMarker>) -> Result<CachedChannel, Error<Self>>;
+    async fn channel(
+        &self,
+        channel_id: Id<ChannelMarker>,
+    ) -> Result<Option<CachedChannel>, Error<Self>>;
 
     /// Get a DM channel's ID by its recipient's ID
     async fn private_channel(
         &self,
         recipient_id: Id<UserMarker>,
-    ) -> Result<Id<ChannelMarker>, Error<Self>>;
+    ) -> Result<Option<Id<ChannelMarker>>, Error<Self>>;
 
     /// Get an auto moderation rule by its ID
     async fn auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<AutoModerationRule, Error<Self>>;
+    ) -> Result<Option<AutoModerationRule>, Error<Self>>;
 }
 
 /// Given a [`twilight_model::channel::ChannelType::Private`] returns the first

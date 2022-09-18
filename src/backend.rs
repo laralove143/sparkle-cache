@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
-    channel::Channel,
     guild::auto_moderation::AutoModerationRule,
     id::{
         marker::{AutoModerationRuleMarker, ChannelMarker, GuildMarker, UserMarker},
@@ -11,7 +10,7 @@ use twilight_model::{
     user::CurrentUser,
 };
 
-use crate::cache;
+use crate::{cache, model::CachedChannel};
 
 /// Provides methods to add or replace data in the cache
 ///
@@ -60,7 +59,7 @@ pub trait Backend: Sized {
     ) -> Result<(), Self::Error>;
 
     /// Add or replace a channel in the cache
-    async fn upsert_channel(&self, channel: Channel) -> Result<(), Self::Error>;
+    async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Self::Error>;
 
     /// Remove a channel from the cache
     async fn remove_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;

@@ -35,12 +35,6 @@ where
     /// Update the cache with the given event, should be called for every event
     /// to keep the cache valid
     ///
-    /// # Warnings
-    ///
-    /// Channel's `last_message_id` is invalid as it would mean updating the
-    /// channel in the cache for every message, to get a channel's last message,
-    /// use [`self::channel_messages`]
-    ///
     /// # Clones
     ///
     /// Many events don't require the event to be cloned, so the event parameter
@@ -74,7 +68,7 @@ where
                     self.add_private_channel(channel.id, recipient_user_id)
                         .await?;
                 } else {
-                    self.upsert_channel((*channel.clone()).0).await?;
+                    self.upsert_channel((&(*channel).0).into()).await?;
                 }
             }
             Event::ChannelDelete(channel) => {
@@ -89,7 +83,7 @@ where
             }
             Event::ChannelUpdate(channel) => {
                 if channel.kind != ChannelType::Private {
-                    self.upsert_channel((*channel.clone()).0).await?;
+                    self.upsert_channel((&(*channel).0).into()).await?;
                 }
             }
             // Event::GuildDelete(_) => {}

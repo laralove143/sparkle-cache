@@ -72,3 +72,6 @@ pub mod backend;
 ///
 /// This is for the users of the cache
 pub mod cache;
+/// Definitions of cached structs, used when the cached data is different from
+/// the event data
+pub mod model;

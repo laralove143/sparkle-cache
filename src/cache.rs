@@ -2,13 +2,10 @@ use async_trait::async_trait;
 use twilight_model::{
     gateway::event::Event,
     guild::auto_moderation::AutoModerationRule,
-    id::{
-        marker::{AutoModerationRuleMarker, GuildMarker},
-        Id,
-    },
+    id::{marker::AutoModerationRuleMarker, Id},
 };
 
-use crate::{backend::Backend, model::CachedGuild};
+use crate::backend::Backend;
 
 /// Provides methods to update the cache and get data from it
 ///
@@ -24,23 +21,12 @@ pub trait Cache: Backend {
     async fn update(&self, event: &Event) -> Result<(), Self::Error> {
         match event {
             Event::AutoModerationRuleCreate(rule) => {
-                let mut guild = self.guild(rule.guild_id).await?;
-                guild.auto_moderation_rules.push(rule.id);
-                self.upsert_guild(guild).await?;
                 self.upsert_auto_moderation_rule((*rule.clone()).0).await?;
             }
             Event::AutoModerationRuleUpdate(rule) => {
-                let mut guild = self.guild(rule.guild_id).await?;
-                guild.auto_moderation_rules.push(rule.id);
-                self.upsert_guild(guild).await?;
                 self.upsert_auto_moderation_rule((*rule.clone()).0).await?;
             }
             Event::AutoModerationRuleDelete(rule) => {
-                let mut guild = self.guild(rule.guild_id).await?;
-                guild
-                    .auto_moderation_rules
-                    .retain(|rule_id| *rule_id != rule.id);
-                self.upsert_guild(guild).await?;
                 self.remove_auto_moderation_rule(rule.id).await?;
             }
             // Event::BanAdd(_) => {}
@@ -120,24 +106,9 @@ pub trait Cache: Backend {
         Ok(())
     }
 
-    /// Get a cached guild by its ID
-    async fn guild(&self, guild_id: Id<GuildMarker>) -> Result<CachedGuild, Self::Error>;
-
     /// Get an auto moderation rule by its ID
     async fn auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
     ) -> Result<AutoModerationRule, Self::Error>;
-
-    /// Get a cached guild's auto moderation rules
-    async fn guild_auto_moderation_rules(
-        &self,
-        guild: CachedGuild,
-    ) -> Result<Vec<AutoModerationRule>, Self::Error> {
-        let mut rules = vec![];
-        for rule_id in guild.auto_moderation_rules {
-            rules.push(self.auto_moderation_rule(rule_id).await?);
-        }
-        Ok(rules)
-    }
 }

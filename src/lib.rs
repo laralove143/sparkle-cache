@@ -71,6 +71,3 @@ pub mod backend;
 ///
 /// This is for the users of the cache
 pub mod cache;
-/// Models of cached data, used when the cached model is different than the
-/// Discord model
-pub mod model;

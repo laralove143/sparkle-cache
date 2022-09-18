@@ -5,13 +5,13 @@ use twilight_model::{
     gateway::event::Event,
     guild::auto_moderation::AutoModerationRule,
     id::{
-        marker::{AutoModerationRuleMarker, UserMarker},
+        marker::{AutoModerationRuleMarker, ChannelMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
 };
 
-use crate::backend::Backend;
+use crate::{backend::Backend, model::CachedChannel};
 
 /// The errors the cache might return
 #[derive(Error, Debug)]
@@ -152,6 +152,15 @@ where
 
     /// Get the current user information of the bot
     async fn current_user(&self) -> Result<CurrentUser, Error<Self>>;
+
+    /// Get a cached channel by its ID
+    async fn channel(&self, channel_id: Id<ChannelMarker>) -> Result<CachedChannel, Error<Self>>;
+
+    /// Get a DM channel's ID by its recipient's ID
+    async fn private_channel(
+        &self,
+        recipient_id: Id<UserMarker>,
+    ) -> Result<Id<ChannelMarker>, Error<Self>>;
 
     /// Get an auto moderation rule by its ID
     async fn auto_moderation_rule(

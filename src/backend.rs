@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use async_trait::async_trait;
 use twilight_model::{
@@ -11,6 +11,19 @@ use twilight_model::{
 };
 
 use crate::{cache, model::CachedChannel};
+
+/// A wrapper around the backend error, for example `Error(sqlx::Error)`
+///
+/// This is required because negative bounds aren't currently supported and
+/// there's no other way to implement `From` a generic for [`cache::Error`]
+#[derive(Clone, Debug)]
+pub struct Error<E: Display + Debug>(pub E);
+
+impl<E: Display + Debug> From<Error<E>> for cache::Error<E> {
+    fn from(err: Error<E>) -> Self {
+        Self::Backend(err)
+    }
+}
 
 /// Provides methods to add or replace data in the cache
 ///
@@ -66,44 +79,38 @@ use crate::{cache, model::CachedChannel};
 /// }
 /// ```
 #[async_trait]
-pub trait Backend: Sized {
-    /// The error the cache's backend could return
-    type Error: Display + From<cache::Error<Self>>;
-
+pub trait Backend<E: Display + Debug>: Sized {
     /// Set the current user information of the bot
-    async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Self::Error>;
+    async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Error<E>>;
 
     /// Add or replace an auto moderation rule in the cache
-    async fn upsert_auto_moderation_rule(
-        &self,
-        rule: AutoModerationRule,
-    ) -> Result<(), Self::Error>;
+    async fn upsert_auto_moderation_rule(&self, rule: AutoModerationRule) -> Result<(), Error<E>>;
 
     /// Remove an auto moderation rule from the cache
     async fn remove_auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error<E>>;
 
     /// Add a banned user to the cache
     async fn add_ban(
         &self,
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error<E>>;
 
     /// Remove a banned user from the cache
     async fn remove_ban(
         &self,
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error<E>>;
 
     /// Add or replace a channel in the cache
-    async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Self::Error>;
+    async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Error<E>>;
 
     /// Remove a channel from the cache
-    async fn remove_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;
+    async fn remove_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Error<E>>;
 
     /// Add a DM channel to the cache
     ///
@@ -113,12 +120,12 @@ pub trait Backend: Sized {
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error<E>>;
 
     /// Remove a DM channel from the cache
     async fn remove_private_channel(
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), Error<E>>;
 }

@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Display};
+
 use async_trait::async_trait;
 use thiserror::Error;
 use twilight_model::{
@@ -11,14 +13,14 @@ use twilight_model::{
     user::CurrentUser,
 };
 
-use crate::{backend::Backend, model::CachedChannel};
+use crate::{backend, backend::Backend, model::CachedChannel};
 
 /// The errors the cache might return
 #[derive(Error, Debug)]
-pub enum Error<B: Backend> {
+pub enum Error<E: Display + Debug> {
     /// An error was returned by the backend
     #[error("An error was returned by the backend:\n{0}")]
-    Backend(B::Error),
+    Backend(backend::Error<E>),
     /// The DM channel doesn't have any recipients other than the bot itself
     #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
     PrivateChannelMissingRecipient(Channel),
@@ -39,10 +41,7 @@ pub enum Error<B: Backend> {
 /// let channel = cache.channel(Id::new(123)).await?.unwrap();
 /// ```
 #[async_trait]
-pub trait Cache: Backend
-where
-    Error<Self>: From<<Self as Backend>::Error>,
-{
+pub trait Cache<E: Display + Debug>: Backend<E> {
     /// Update the cache with the given event, should be called for every event
     /// to keep the cache valid
     ///
@@ -50,7 +49,7 @@ where
     ///
     /// Many events don't require the event to be cloned, so the event parameter
     /// is taken by a reference, if an event does require a clone (usually
-    /// add and update events), it will clone the required data implicitly
+    /// add and update events), it will clone the required fields
     ///
     /// # Errors
     ///
@@ -59,13 +58,13 @@ where
     /// On `ChannelCreate`, `ChannelUpdate` and `ChannelDelete` events when the
     /// channel is a DM channel, might return
     /// [`Error::PrivateChannelMissingRecipient`]
-    async fn update(&self, event: &Event) -> Result<(), Error<Self>> {
+    async fn update(&self, event: &Event) -> Result<(), Error<E>> {
         match event {
             Event::AutoModerationRuleCreate(rule) => {
-                self.upsert_auto_moderation_rule((*rule.clone()).0).await?;
+                self.upsert_auto_moderation_rule(rule.clone().0).await?;
             }
             Event::AutoModerationRuleUpdate(rule) => {
-                self.upsert_auto_moderation_rule((*rule.clone()).0).await?;
+                self.upsert_auto_moderation_rule(rule.clone().0).await?;
             }
             Event::AutoModerationRuleDelete(rule) => {
                 self.remove_auto_moderation_rule(rule.id).await?;
@@ -83,12 +82,12 @@ where
                     self.add_private_channel(channel.id, recipient_user_id)
                         .await?;
                 } else {
-                    self.upsert_channel((&(*channel).0).into()).await?;
+                    self.upsert_channel(CachedChannel::from(&channel.0)).await?;
                 }
             }
             Event::ChannelUpdate(channel) => {
                 if channel.kind != ChannelType::Private {
-                    self.upsert_channel((&(*channel).0).into()).await?;
+                    self.upsert_channel(CachedChannel::from(&channel.0)).await?;
                 }
             }
             Event::ChannelDelete(channel) => {
@@ -171,25 +170,25 @@ where
     ///
     /// Returns [`Error::CurrentUserMissing`] when called before the ready event
     /// is received
-    async fn current_user(&self) -> Result<CurrentUser, Error<Self>>;
+    async fn current_user(&self) -> Result<CurrentUser, Error<E>>;
 
     /// Get a cached channel by its ID
     async fn channel(
         &self,
         channel_id: Id<ChannelMarker>,
-    ) -> Result<Option<CachedChannel>, Error<Self>>;
+    ) -> Result<Option<CachedChannel>, Error<E>>;
 
     /// Get a DM channel's ID by its recipient's ID
     async fn private_channel(
         &self,
         recipient_id: Id<UserMarker>,
-    ) -> Result<Option<Id<ChannelMarker>>, Error<Self>>;
+    ) -> Result<Option<Id<ChannelMarker>>, Error<E>>;
 
     /// Get an auto moderation rule by its ID
     async fn auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<Option<AutoModerationRule>, Error<Self>>;
+    ) -> Result<Option<AutoModerationRule>, Error<E>>;
 }
 
 /// Given a [`twilight_model::channel::ChannelType::Private`] returns the first
@@ -199,10 +198,10 @@ where
 ///
 /// Returns [`Error::PrivateChannelMissingRecipient`], also clones the channel
 /// to create the error
-fn private_channel_recipient<T: Backend>(
+fn private_channel_recipient<E: Display + Debug>(
     current_user_id: Id<UserMarker>,
     channel: &Channel,
-) -> Result<Id<UserMarker>, Error<T>> {
+) -> Result<Id<UserMarker>, Error<E>> {
     let recipient_user_id = channel
         .recipients
         .as_ref()

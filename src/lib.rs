@@ -61,9 +61,13 @@
     clippy::pattern_type_mismatch,
     clippy::wildcard_enum_match_arm,
     clippy::exhaustive_enums,
-    clippy::self_named_module_files
+    clippy::self_named_module_files,
+    clippy::pub_use
 )]
 #![doc = include_str!("../README.md")]
+
+pub use backend::Backend;
+pub use cache::Cache;
 
 /// The trait to define how to get and set data in the backend
 ///

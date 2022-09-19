@@ -69,12 +69,6 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
             Event::AutoModerationRuleDelete(rule) => {
                 self.delete_auto_moderation_rule(rule.id).await?;
             }
-            Event::BanAdd(ban) => {
-                self.add_ban(ban.guild_id, ban.user.id).await?;
-            }
-            Event::BanRemove(ban) => {
-                self.remove_ban(ban.guild_id, ban.user.id).await?;
-            }
             Event::ChannelCreate(channel) => {
                 self.add_channel(channel).await?;
             }

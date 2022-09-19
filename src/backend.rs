@@ -92,20 +92,6 @@ pub trait Backend<E: Display + Debug>: Sized {
         rule_id: Id<AutoModerationRuleMarker>,
     ) -> Result<(), Error<E>>;
 
-    /// Add a banned user to the cache
-    async fn upsert_ban(
-        &self,
-        guild_id: Id<GuildMarker>,
-        user_id: Id<UserMarker>,
-    ) -> Result<(), Error<E>>;
-
-    /// Remove a banned user from the cache
-    async fn delete_ban(
-        &self,
-        guild_id: Id<GuildMarker>,
-        user_id: Id<UserMarker>,
-    ) -> Result<(), Error<E>>;
-
     /// Add or replace a channel in the cache
     async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Error<E>>;
 

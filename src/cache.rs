@@ -67,7 +67,7 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
                 self.upsert_auto_moderation_rule(rule.clone().0).await?;
             }
             Event::AutoModerationRuleDelete(rule) => {
-                self.remove_auto_moderation_rule(rule.id).await?;
+                self.delete_auto_moderation_rule(rule.id).await?;
             }
             Event::BanAdd(ban) => {
                 self.add_ban(ban.guild_id, ban.user.id).await?;
@@ -76,13 +76,13 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
                 self.remove_ban(ban.guild_id, ban.user.id).await?;
             }
             Event::ChannelCreate(channel) => {
-                self._upsert_channel(channel).await?;
+                self.add_channel(channel).await?;
             }
             Event::ChannelUpdate(channel) => {
-                self._upsert_channel(channel).await?;
+                self.add_channel(channel).await?;
             }
             Event::ChannelDelete(channel) => {
-                self._remove_channel(channel).await?;
+                self.delete_channel(channel.id).await?;
             }
             // Event::GuildCreate(_) => {}
             // Event::GuildDelete(_) => {}
@@ -182,10 +182,11 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     ///
     /// When the channel is a DM channel, might return
     /// [`cache::Error::PrivateChannelMissingRecipient`]
-    async fn _upsert_channel(&self, channel: &Channel) -> Result<(), Error<E>> {
+    #[doc(hidden)]
+    async fn add_channel(&self, channel: &Channel) -> Result<(), Error<E>> {
         if channel.kind == ChannelType::Private {
-            let recipient_user_id = self._private_channel_recipient(channel).await?;
-            self.add_private_channel(channel.id, recipient_user_id)
+            let recipient_user_id = self.private_channel_recipient(channel).await?;
+            self.upsert_private_channel(channel.id, recipient_user_id)
                 .await?;
         } else {
             self.upsert_channel(CachedChannel::from(channel)).await?;
@@ -202,13 +203,14 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     ///
     /// When the channel is a DM channel, might return
     /// [`cache::Error::PrivateChannelMissingRecipient`]
-    async fn _remove_channel(&self, channel: &Channel) -> Result<(), Error<E>> {
+    #[doc(hidden)]
+    async fn remove_channel(&self, channel: &Channel) -> Result<(), Error<E>> {
         if channel.kind == ChannelType::Private {
-            let recipient_user_id = self._private_channel_recipient(channel).await?;
-            self.remove_private_channel(channel.id, recipient_user_id)
+            let recipient_user_id = self.private_channel_recipient(channel).await?;
+            self.delete_private_channel(channel.id, recipient_user_id)
                 .await?;
         } else {
-            self.remove_channel(channel.id).await?;
+            self.delete_channel(channel.id).await?;
         }
 
         Ok(())
@@ -221,7 +223,8 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     ///
     /// Returns [`Error::PrivateChannelMissingRecipient`], also clones the
     /// channel to create the error
-    async fn _private_channel_recipient(
+    #[doc(hidden)]
+    async fn private_channel_recipient(
         &self,
         channel: &Channel,
     ) -> Result<Id<UserMarker>, Error<E>> {

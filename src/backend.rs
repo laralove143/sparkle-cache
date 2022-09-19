@@ -87,20 +87,20 @@ pub trait Backend<E: Display + Debug>: Sized {
     async fn upsert_auto_moderation_rule(&self, rule: AutoModerationRule) -> Result<(), Error<E>>;
 
     /// Remove an auto moderation rule from the cache
-    async fn remove_auto_moderation_rule(
+    async fn delete_auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
     ) -> Result<(), Error<E>>;
 
     /// Add a banned user to the cache
-    async fn add_ban(
+    async fn upsert_ban(
         &self,
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
     ) -> Result<(), Error<E>>;
 
     /// Remove a banned user from the cache
-    async fn remove_ban(
+    async fn delete_ban(
         &self,
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
@@ -110,20 +110,20 @@ pub trait Backend<E: Display + Debug>: Sized {
     async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Error<E>>;
 
     /// Remove a channel from the cache
-    async fn remove_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Error<E>>;
+    async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Error<E>>;
 
     /// Add a DM channel to the cache
     ///
     /// This is different from a guild channel because it only has a channel ID
     /// and recipient user ID fields
-    async fn add_private_channel(
+    async fn upsert_private_channel(
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
     ) -> Result<(), Error<E>>;
 
     /// Remove a DM channel from the cache
-    async fn remove_private_channel(
+    async fn delete_private_channel(
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,

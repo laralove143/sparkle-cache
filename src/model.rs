@@ -5,6 +5,9 @@
 )]
 
 pub use channel::CachedChannel;
+pub use guild::CachedGuild;
 
-/// Definition and implementations for [`channel::CachedChannel`]
+/// Definition and implementations for [`CachedChannel`]
 pub mod channel;
+/// Definition and implementations for [`CachedGuild`]
+pub mod guild;

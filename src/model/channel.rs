@@ -14,8 +14,8 @@ use twilight_model::{
 /// A cached channel, it is the same as [`twilight_model::channel::Channel`]
 /// except:
 ///
-/// - [`twilight_model::channel::Channel.recipients`] is changed to user IDs,
-///   which are cached separately
+/// - [`twilight_model::channel::Channel.recipients`] is removed, as it's only
+///   sent in DM channels, which are cached separately
 ///
 /// - [`twilight_model::channel::Channel.last_message_id`],
 ///   [`twilight_model::channel::Channel.last_pin_timestamp`],
@@ -43,7 +43,6 @@ pub struct CachedChannel {
     pub permission_overwrites: Option<Vec<PermissionOverwrite>>,
     pub position: Option<i32>,
     pub rate_limit_per_user: Option<u16>,
-    pub recipients: Option<Vec<Id<UserMarker>>>,
     pub rtc_region: Option<String>,
     pub thread_metadata: Option<ThreadMetadata>,
     pub topic: Option<String>,
@@ -76,10 +75,6 @@ impl From<&Channel> for CachedChannel {
             permission_overwrites: channel.permission_overwrites.clone(),
             position: channel.position,
             rate_limit_per_user: channel.rate_limit_per_user,
-            recipients: channel
-                .recipients
-                .as_ref()
-                .map(|recipients| recipients.iter().map(|recipient| recipient.id).collect()),
             rtc_region: channel.rtc_region.clone(),
             thread_metadata: channel.thread_metadata.clone(),
             topic: channel.topic.clone(),

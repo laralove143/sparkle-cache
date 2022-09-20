@@ -3,7 +3,7 @@ use std::fmt::Display;
 use async_trait::async_trait;
 use twilight_model::{
     id::{
-        marker::{ChannelMarker, GuildMarker, UserMarker},
+        marker::{ChannelMarker, EmojiMarker, GuildMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
@@ -11,7 +11,7 @@ use twilight_model::{
 
 use crate::{
     cache,
-    model::{CachedChannel, CachedGuild},
+    model::{CachedChannel, CachedEmoji, CachedGuild},
 };
 
 /// Implemented on backend errors, for example `Error(sqlx::Error)`
@@ -117,4 +117,15 @@ pub trait Backend {
 
     /// Remove a channel from the cache
     async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a emoji in the cache
+    async fn upsert_emoji(&self, emoji: CachedEmoji) -> Result<(), Self::Error>;
+
+    /// Remove a emoji from the cache
+    async fn delete_emoji(&self, emoji_id: Id<EmojiMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a guild's channels from the cache
+    ///
+    /// This should be something like `DELETE FROM emojis WHERE guild_id = ?`
+    async fn delete_guild_emojis(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 }

@@ -5,15 +5,19 @@ use thiserror::Error;
 use twilight_model::{
     channel::{Channel, ChannelType},
     gateway::event::Event,
-    guild::auto_moderation::AutoModerationRule,
+    guild::{auto_moderation::AutoModerationRule, Emoji},
     id::{
-        marker::{AutoModerationRuleMarker, ChannelMarker, UserMarker},
+        marker::{AutoModerationRuleMarker, ChannelMarker, GuildMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
 };
 
-use crate::{backend, model::CachedChannel, Backend};
+use crate::{
+    backend,
+    model::{CachedChannel, CachedEmoji, CachedGuild},
+    Backend,
+};
 
 /// The errors the cache might return
 #[derive(Error, Debug)]
@@ -73,13 +77,23 @@ pub trait Cache: Backend {
                 for channel in &guild.channels {
                     self.add_channel(channel).await?;
                 }
+                for emoji in &guild.emojis {
+                    self.add_emoji(emoji, guild.id).await?;
+                }
+                self.upsert_guild(CachedGuild::from(&guild.0)).await?;
             }
             Event::GuildDelete(guild) => {
                 if !guild.unavailable {
                     self.delete_guild_channels(guild.id).await?;
+                    self.delete_guild_emojis(guild.id).await?;
+                }
+                self.delete_guild(guild.id).await?;
+            }
+            Event::GuildEmojisUpdate(emojis) => {
+                for emoji in &emojis.emojis {
+                    self.add_emoji(emoji, emojis.guild_id).await?;
                 }
             }
-            // Event::GuildEmojisUpdate(_) => {}
             // Event::GuildIntegrationsUpdate(_) => {}
             // Event::GuildScheduledEventCreate(_) => {}
             // Event::GuildScheduledEventDelete(_) => {}
@@ -229,5 +243,17 @@ pub trait Cache: Backend {
             .ok_or_else(|| Error::PrivateChannelMissingRecipient(channel.clone()))?
             .id;
         Ok(recipient_user_id)
+    }
+
+    /// Adds the emoji to the cache
+    #[doc(hidden)]
+    async fn add_emoji(
+        &self,
+        emoji: &Emoji,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<(), Error<Self::Error>> {
+        self.upsert_emoji(CachedEmoji::from_emoji(emoji, guild_id))
+            .await?;
+        Ok(())
     }
 }

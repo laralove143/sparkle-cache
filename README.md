@@ -13,6 +13,8 @@ This means these data can't be cached for now:
 
 - Guild bans
 - Auto moderation rules
+- Guild integrations
+- Guild scheduled events
 - Missing data that you can create a PR to add to this list
 
 ## Support for libraries other than Twilight

@@ -110,7 +110,6 @@ pub trait Cache: Backend {
                     self.upsert_sticker(sticker.into()).await?;
                 }
             }
-            // Event::GuildUpdate(_) => {}
             // Event::IntegrationCreate(_) => {}
             // Event::IntegrationDelete(_) => {}
             // Event::IntegrationUpdate(_) => {}
@@ -184,11 +183,23 @@ pub trait Cache: Backend {
         recipient_id: Id<UserMarker>,
     ) -> Result<Option<Id<ChannelMarker>>, Error<Self::Error>>;
 
-    /// Get an auto moderation rule by its ID
-    async fn auto_moderation_rule(
+    /// Get a cached guild by its ID
+    async fn guild(
         &self,
-        rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<Option<AutoModerationRule>, Error<Self::Error>>;
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Option<CachedGuild>, Error<Self::Error>>;
+
+    /// Get a cached emoji by its ID
+    async fn emoji(
+        &self,
+        emoji_id: Id<EmojiMarker>,
+    ) -> Result<Option<CachedEmoji>, Error<Self::Error>>;
+
+    /// Get a cached sticker by its ID
+    async fn sticker(
+        &self,
+        sticker_id: Id<StickerMarker>,
+    ) -> Result<Option<CachedSticker>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
     ///

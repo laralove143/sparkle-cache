@@ -5,9 +5,9 @@ use thiserror::Error;
 use twilight_model::{
     channel::{Channel, ChannelType},
     gateway::event::Event,
-    guild::{auto_moderation::AutoModerationRule, Emoji},
+    guild::Emoji,
     id::{
-        marker::{AutoModerationRuleMarker, ChannelMarker, GuildMarker, UserMarker},
+        marker::{ChannelMarker, EmojiMarker, GuildMarker, StickerMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
@@ -15,7 +15,7 @@ use twilight_model::{
 
 use crate::{
     backend,
-    model::{CachedChannel, CachedEmoji, CachedGuild},
+    model::{CachedChannel, CachedEmoji, CachedGuild, CachedSticker},
     Backend,
 };
 
@@ -84,6 +84,12 @@ pub trait Cache: Backend {
                     self.upsert_sticker(sticker.into()).await?;
                 }
                 self.upsert_guild(CachedGuild::from(&guild.0)).await?;
+            }
+            Event::GuildUpdate(guild) => {
+                if let Some(mut cached_guild) = self.guild(guild.id).await? {
+                    cached_guild.update(guild);
+                    self.upsert_guild(cached_guild).await?;
+                }
             }
             Event::GuildDelete(guild) => {
                 if !guild.unavailable {

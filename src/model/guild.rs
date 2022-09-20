@@ -1,7 +1,7 @@
 use twilight_model::{
     guild::{
         DefaultMessageNotificationLevel, ExplicitContentFilter, Guild, GuildFeature, MfaLevel,
-        NSFWLevel, Permissions, PremiumTier, SystemChannelFlags, VerificationLevel,
+        NSFWLevel, PartialGuild, Permissions, PremiumTier, SystemChannelFlags, VerificationLevel,
     },
     id::{
         marker::{ApplicationMarker, ChannelMarker, GuildMarker, UserMarker},
@@ -66,6 +66,63 @@ pub struct CachedGuild {
     pub verification_level: VerificationLevel,
     pub widget_channel_id: Option<Id<ChannelMarker>>,
     pub widget_enabled: Option<bool>,
+}
+
+impl CachedGuild {
+    /// Update the cached guild with the partial guild
+    ///
+    /// # Clones
+    ///
+    /// These fields if any of them are changed:
+    ///
+    /// - [`Self.name`]
+    /// - [`Self.description`]
+    /// - [`Self.features`]
+    /// - [`Self.preferred_locale`]
+    /// - [`Self.vanity_url_code`]
+    pub fn update(&mut self, guild: &PartialGuild) {
+        self.id = guild.id;
+        self.afk_channel_id = guild.afk_channel_id;
+        self.afk_timeout = guild.afk_timeout;
+        self.application_id = guild.application_id;
+        self.banner = guild.banner;
+        self.default_message_notifications = guild.default_message_notifications;
+        if self.description != guild.description {
+            self.description = guild.description.clone();
+        };
+        self.discovery_splash = guild.discovery_splash;
+        self.explicit_content_filter = guild.explicit_content_filter;
+        if self.features != guild.features {
+            self.features = guild.features.clone();
+        }
+        self.icon = guild.icon;
+        self.max_members = guild.max_members;
+        self.max_presences = guild.max_presences;
+        self.mfa_level = guild.mfa_level;
+        if self.name != guild.name {
+            self.name = guild.name.clone();
+        }
+        self.nsfw_level = guild.nsfw_level;
+        self.owner_id = guild.owner_id;
+        self.owner = guild.owner;
+        self.permissions = guild.permissions;
+        if self.preferred_locale != guild.preferred_locale {
+            self.preferred_locale = guild.preferred_locale.clone();
+        }
+        self.premium_progress_bar_enabled = guild.premium_progress_bar_enabled;
+        self.premium_subscription_count = guild.premium_subscription_count;
+        self.premium_tier = guild.premium_tier;
+        self.rules_channel_id = guild.rules_channel_id;
+        self.splash = guild.splash;
+        self.system_channel_flags = guild.system_channel_flags;
+        self.system_channel_id = guild.system_channel_id;
+        self.verification_level = guild.verification_level;
+        if self.vanity_url_code != guild.vanity_url_code {
+            self.vanity_url_code = guild.vanity_url_code.clone();
+        }
+        self.widget_channel_id = guild.widget_channel_id;
+        self.widget_enabled = guild.widget_enabled;
+    }
 }
 
 impl From<&Guild> for CachedGuild {

@@ -3,21 +3,19 @@ use std::fmt::Display;
 use async_trait::async_trait;
 use twilight_model::{
     id::{
-        marker::{ChannelMarker, EmojiMarker, GuildMarker, UserMarker},
+        marker::{ChannelMarker, EmojiMarker, GuildMarker, StickerMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
 };
-use twilight_model::id::marker::StickerMarker;
 
 use crate::{
     cache,
-    model::{CachedChannel, CachedEmoji, CachedGuild},
+    model::{CachedChannel, CachedEmoji, CachedGuild, CachedSticker},
 };
-use crate::model::CachedSticker;
 
 /// Implemented on backend errors, for example `Error(sqlx::Error)`
-pub trait Error: Display {}
+pub trait Error: Display + Send {}
 
 impl<E: Error> From<E> for cache::Error<E> {
     fn from(err: E) -> Self {

@@ -10,9 +10,9 @@ use twilight_model::{
 /// except:
 ///
 /// - [`Self.guild_id`] field is added, making it possible to return a guild's
-///   emoji
+///   emojis
 ///
-/// - [`twilight_model::guild::Emoji.user`] is changed to IDs which are cached
+/// - [`twilight_model::guild::Emoji.user`] is changed a user ID which is cached
 ///   separately
 #[derive(Clone, Debug)]
 pub struct CachedEmoji {

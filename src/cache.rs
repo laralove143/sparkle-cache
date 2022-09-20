@@ -80,6 +80,9 @@ pub trait Cache: Backend {
                 for emoji in &guild.emojis {
                     self.add_emoji(emoji, guild.id).await?;
                 }
+                for sticker in &guild.stickers {
+                    self.upsert_sticker(sticker.into()).await?;
+                }
                 self.upsert_guild(CachedGuild::from(&guild.0)).await?;
             }
             Event::GuildDelete(guild) => {
@@ -90,17 +93,17 @@ pub trait Cache: Backend {
                 self.delete_guild(guild.id).await?;
             }
             Event::GuildEmojisUpdate(emojis) => {
+                self.delete_guild_emojis(emojis.guild_id).await?;
                 for emoji in &emojis.emojis {
                     self.add_emoji(emoji, emojis.guild_id).await?;
                 }
             }
-            // Event::GuildIntegrationsUpdate(_) => {}
-            // Event::GuildScheduledEventCreate(_) => {}
-            // Event::GuildScheduledEventDelete(_) => {}
-            // Event::GuildScheduledEventUpdate(_) => {}
-            // Event::GuildScheduledEventUserAdd(_) => {}
-            // Event::GuildScheduledEventUserRemove(_) => {}
-            // Event::GuildStickersUpdate(_) => {}
+            Event::GuildStickersUpdate(stickers) => {
+                self.delete_guild_stickers(stickers.guild_id).await?;
+                for sticker in &stickers.stickers {
+                    self.upsert_sticker(sticker.into()).await?;
+                }
+            }
             // Event::GuildUpdate(_) => {}
             // Event::IntegrationCreate(_) => {}
             // Event::IntegrationDelete(_) => {}

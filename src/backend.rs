@@ -8,11 +8,13 @@ use twilight_model::{
     },
     user::CurrentUser,
 };
+use twilight_model::id::marker::StickerMarker;
 
 use crate::{
     cache,
     model::{CachedChannel, CachedEmoji, CachedGuild},
 };
+use crate::model::CachedSticker;
 
 /// Implemented on backend errors, for example `Error(sqlx::Error)`
 pub trait Error: Display {}
@@ -124,8 +126,19 @@ pub trait Backend {
     /// Remove a emoji from the cache
     async fn delete_emoji(&self, emoji_id: Id<EmojiMarker>) -> Result<(), Self::Error>;
 
-    /// Remove a guild's channels from the cache
+    /// Remove a guild's emojis from the cache
     ///
     /// This should be something like `DELETE FROM emojis WHERE guild_id = ?`
     async fn delete_guild_emojis(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a sticker in the cache
+    async fn upsert_sticker(&self, sticker: CachedSticker) -> Result<(), Self::Error>;
+
+    /// Remove a sticker from the cache
+    async fn delete_sticker(&self, sticker_id: Id<StickerMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a guild's stickers from the cache
+    ///
+    /// This should be something like `DELETE FROM stickers WHERE guild_id = ?`
+    async fn delete_guild_stickers(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 }

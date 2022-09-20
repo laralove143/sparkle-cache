@@ -8,6 +8,7 @@
 pub use channel::CachedChannel;
 pub use emoji::CachedEmoji;
 pub use guild::CachedGuild;
+pub use sticker::CachedSticker;
 
 /// Definition and implementations for [`CachedChannel`]
 mod channel;
@@ -15,3 +16,5 @@ mod channel;
 mod emoji;
 /// Definition and implementations for [`CachedGuild`]
 mod guild;
+/// Definition and implementations for [`CachedSticker`]
+mod sticker;

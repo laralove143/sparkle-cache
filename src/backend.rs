@@ -2,15 +2,17 @@ use std::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
-    guild::auto_moderation::AutoModerationRule,
     id::{
-        marker::{AutoModerationRuleMarker, ChannelMarker, UserMarker},
+        marker::{ChannelMarker, GuildMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
 };
 
-use crate::{cache, model::CachedChannel};
+use crate::{
+    cache,
+    model::{CachedChannel, CachedGuild},
+};
 
 /// Implemented on backend errors, for example `Error(sqlx::Error)`
 pub trait Error: Display {}
@@ -81,18 +83,6 @@ pub trait Backend {
 
     /// Set the current user information of the bot
     async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Self::Error>;
-
-    /// Add or replace an auto moderation rule in the cache
-    async fn upsert_auto_moderation_rule(
-        &self,
-        rule: AutoModerationRule,
-    ) -> Result<(), Self::Error>;
-
-    /// Remove an auto moderation rule from the cache
-    async fn delete_auto_moderation_rule(
-        &self,
-        rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<(), Self::Error>;
 
     /// Add or replace a channel in the cache
     async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Self::Error>;

@@ -60,15 +60,6 @@ pub trait Cache: Backend {
     /// [`Error::PrivateChannelMissingRecipient`]
     async fn update(&self, event: &Event) -> Result<(), Error<Self::Error>> {
         match event {
-            Event::AutoModerationRuleCreate(rule) => {
-                self.upsert_auto_moderation_rule(rule.clone().0).await?;
-            }
-            Event::AutoModerationRuleUpdate(rule) => {
-                self.upsert_auto_moderation_rule(rule.clone().0).await?;
-            }
-            Event::AutoModerationRuleDelete(rule) => {
-                self.delete_auto_moderation_rule(rule.id).await?;
-            }
             Event::ChannelCreate(channel) => {
                 self.add_channel(channel).await?;
             }

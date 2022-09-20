@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
 use async_trait::async_trait;
 use thiserror::Error;
@@ -13,14 +13,14 @@ use twilight_model::{
     user::CurrentUser,
 };
 
-use crate::{backend, backend::Backend, model::CachedChannel};
+use crate::{backend, model::CachedChannel, Backend};
 
 /// The errors the cache might return
 #[derive(Error, Debug)]
-pub enum Error<E: Display + Debug> {
+pub enum Error<E: backend::Error> {
     /// An error was returned by the backend
     #[error("An error was returned by the backend:\n{0}")]
-    Backend(backend::Error<E>),
+    Backend(E),
     /// The DM channel doesn't have any recipients other than the bot itself
     #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
     PrivateChannelMissingRecipient(Channel),
@@ -41,7 +41,7 @@ pub enum Error<E: Display + Debug> {
 /// let channel = cache.channel(Id::new(123)).await?.unwrap();
 /// ```
 #[async_trait]
-pub trait Cache<E: Display + Debug>: Backend<E> {
+pub trait Cache: Backend {
     /// Update the cache with the given event, should be called for every event
     /// to keep the cache valid
     ///
@@ -58,7 +58,7 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     /// On `ChannelCreate`, `ChannelUpdate` and `ChannelDelete` events when the
     /// channel is a DM channel, might return
     /// [`Error::PrivateChannelMissingRecipient`]
-    async fn update(&self, event: &Event) -> Result<(), Error<E>> {
+    async fn update(&self, event: &Event) -> Result<(), Error<Self::Error>> {
         match event {
             Event::AutoModerationRuleCreate(rule) => {
                 self.upsert_auto_moderation_rule(rule.clone().0).await?;
@@ -148,25 +148,25 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     ///
     /// Returns [`Error::CurrentUserMissing`] when called before the ready event
     /// is received
-    async fn current_user(&self) -> Result<CurrentUser, Error<E>>;
+    async fn current_user(&self) -> Result<CurrentUser, Error<Self::Error>>;
 
     /// Get a cached channel by its ID
     async fn channel(
         &self,
         channel_id: Id<ChannelMarker>,
-    ) -> Result<Option<CachedChannel>, Error<E>>;
+    ) -> Result<Option<CachedChannel>, Error<Self::Error>>;
 
     /// Get a DM channel's ID by its recipient's ID
     async fn private_channel(
         &self,
         recipient_id: Id<UserMarker>,
-    ) -> Result<Option<Id<ChannelMarker>>, Error<E>>;
+    ) -> Result<Option<Id<ChannelMarker>>, Error<Self::Error>>;
 
     /// Get an auto moderation rule by its ID
     async fn auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<Option<AutoModerationRule>, Error<E>>;
+    ) -> Result<Option<AutoModerationRule>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
     ///
@@ -177,7 +177,7 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     /// When the channel is a DM channel, might return
     /// [`cache::Error::PrivateChannelMissingRecipient`]
     #[doc(hidden)]
-    async fn add_channel(&self, channel: &Channel) -> Result<(), Error<E>> {
+    async fn add_channel(&self, channel: &Channel) -> Result<(), Error<Self::Error>> {
         if channel.kind == ChannelType::Private {
             let recipient_user_id = self.private_channel_recipient(channel).await?;
             self.upsert_private_channel(channel.id, recipient_user_id)
@@ -198,7 +198,7 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     /// When the channel is a DM channel, might return
     /// [`cache::Error::PrivateChannelMissingRecipient`]
     #[doc(hidden)]
-    async fn remove_channel(&self, channel: &Channel) -> Result<(), Error<E>> {
+    async fn remove_channel(&self, channel: &Channel) -> Result<(), Error<Self::Error>> {
         if channel.kind == ChannelType::Private {
             let recipient_user_id = self.private_channel_recipient(channel).await?;
             self.delete_private_channel(channel.id, recipient_user_id)
@@ -221,7 +221,7 @@ pub trait Cache<E: Display + Debug>: Backend<E> {
     async fn private_channel_recipient(
         &self,
         channel: &Channel,
-    ) -> Result<Id<UserMarker>, Error<E>> {
+    ) -> Result<Id<UserMarker>, Error<Self::Error>> {
         let current_user_id = self.current_user().await?.id;
         let recipient_user_id = channel
             .recipients

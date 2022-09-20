@@ -1,10 +1,10 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
     guild::auto_moderation::AutoModerationRule,
     id::{
-        marker::{AutoModerationRuleMarker, ChannelMarker, GuildMarker, UserMarker},
+        marker::{AutoModerationRuleMarker, ChannelMarker, UserMarker},
         Id,
     },
     user::CurrentUser,
@@ -12,15 +12,11 @@ use twilight_model::{
 
 use crate::{cache, model::CachedChannel};
 
-/// A wrapper around the backend error, for example `Error(sqlx::Error)`
-///
-/// This is required because negative bounds aren't currently supported and
-/// there's no other way to implement `From` a generic for [`cache::Error`]
-#[derive(Clone, Debug)]
-pub struct Error<E: Display + Debug>(pub E);
+/// Implemented on backend errors, for example `Error(sqlx::Error)`
+pub trait Error: Display {}
 
-impl<E: Display + Debug> From<Error<E>> for cache::Error<E> {
-    fn from(err: Error<E>) -> Self {
+impl<E: Error> From<E> for cache::Error<E> {
+    fn from(err: E) -> Self {
         Self::Backend(err)
     }
 }
@@ -79,24 +75,30 @@ impl<E: Display + Debug> From<Error<E>> for cache::Error<E> {
 /// }
 /// ```
 #[async_trait]
-pub trait Backend<E: Display + Debug>: Sized {
+pub trait Backend {
+    /// The error type the backend returns, for example `Error(sqlx::Error)`
+    type Error: Error;
+
     /// Set the current user information of the bot
-    async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Error<E>>;
+    async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Self::Error>;
 
     /// Add or replace an auto moderation rule in the cache
-    async fn upsert_auto_moderation_rule(&self, rule: AutoModerationRule) -> Result<(), Error<E>>;
+    async fn upsert_auto_moderation_rule(
+        &self,
+        rule: AutoModerationRule,
+    ) -> Result<(), Self::Error>;
 
     /// Remove an auto moderation rule from the cache
     async fn delete_auto_moderation_rule(
         &self,
         rule_id: Id<AutoModerationRuleMarker>,
-    ) -> Result<(), Error<E>>;
+    ) -> Result<(), Self::Error>;
 
     /// Add or replace a channel in the cache
-    async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Error<E>>;
+    async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Self::Error>;
 
     /// Remove a channel from the cache
-    async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Error<E>>;
+    async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;
 
     /// Add a DM channel to the cache
     ///
@@ -106,12 +108,12 @@ pub trait Backend<E: Display + Debug>: Sized {
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
-    ) -> Result<(), Error<E>>;
+    ) -> Result<(), Self::Error>;
 
     /// Remove a DM channel from the cache
     async fn delete_private_channel(
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
-    ) -> Result<(), Error<E>>;
+    ) -> Result<(), Self::Error>;
 }

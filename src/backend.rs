@@ -90,6 +90,11 @@ pub trait Backend {
     /// Remove a channel from the cache
     async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;
 
+    /// Remove a guild's channels from the cache
+    ///
+    /// This should be something like `DELETE FROM channels WHERE guild_id = ?`
+    async fn delete_guild_channels(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
     /// Add a DM channel to the cache
     ///
     /// This is different from a guild channel because it only has a channel ID
@@ -106,4 +111,10 @@ pub trait Backend {
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
     ) -> Result<(), Self::Error>;
+
+    /// Add or replace a guild in the cache
+    async fn upsert_guild(&self, guild: CachedGuild) -> Result<(), Self::Error>;
+
+    /// Remove a channel from the cache
+    async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 }

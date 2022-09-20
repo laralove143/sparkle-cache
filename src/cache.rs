@@ -69,8 +69,16 @@ pub trait Cache: Backend {
             Event::ChannelDelete(channel) => {
                 self.delete_channel(channel.id).await?;
             }
-            // Event::GuildCreate(_) => {}
-            // Event::GuildDelete(_) => {}
+            Event::GuildCreate(guild) => {
+                for channel in &guild.channels {
+                    self.add_channel(channel).await?;
+                }
+            }
+            Event::GuildDelete(guild) => {
+                if !guild.unavailable {
+                    self.delete_guild_channels(guild.id).await?;
+                }
+            }
             // Event::GuildEmojisUpdate(_) => {}
             // Event::GuildIntegrationsUpdate(_) => {}
             // Event::GuildScheduledEventCreate(_) => {}

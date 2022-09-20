@@ -8,6 +8,6 @@ pub use channel::CachedChannel;
 pub use guild::CachedGuild;
 
 /// Definition and implementations for [`CachedChannel`]
-pub mod channel;
+mod channel;
 /// Definition and implementations for [`CachedGuild`]
-pub mod guild;
+mod guild;

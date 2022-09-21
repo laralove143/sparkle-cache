@@ -30,11 +30,6 @@ pub struct CachedSticker {
 }
 
 impl From<&Sticker> for CachedSticker {
-    /// # Clones
-    ///
-    /// - [`Self.name`]
-    /// - [`Self.description`]
-    /// - [`Self.tags`]
     fn from(sticker: &Sticker) -> Self {
         Self {
             available: sticker.available,

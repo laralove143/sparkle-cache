@@ -70,16 +70,6 @@ pub struct CachedGuild {
 
 impl CachedGuild {
     /// Update the cached guild with the partial guild
-    ///
-    /// # Clones
-    ///
-    /// These fields if any of them are changed:
-    ///
-    /// - [`Self.name`]
-    /// - [`Self.description`]
-    /// - [`Self.features`]
-    /// - [`Self.preferred_locale`]
-    /// - [`Self.vanity_url_code`]
     pub fn update(&mut self, guild: &PartialGuild) {
         self.id = guild.id;
         self.afk_channel_id = guild.afk_channel_id;
@@ -87,28 +77,20 @@ impl CachedGuild {
         self.application_id = guild.application_id;
         self.banner = guild.banner;
         self.default_message_notifications = guild.default_message_notifications;
-        if self.description != guild.description {
-            self.description = guild.description.clone();
-        };
+        self.description.clone_from(&guild.description);
         self.discovery_splash = guild.discovery_splash;
         self.explicit_content_filter = guild.explicit_content_filter;
-        if self.features != guild.features {
-            self.features = guild.features.clone();
-        }
-        self.icon = guild.icon;
+        self.features.clone_from(&guild.features);
+        self.icon.clone_from(&guild.icon);
         self.max_members = guild.max_members;
         self.max_presences = guild.max_presences;
         self.mfa_level = guild.mfa_level;
-        if self.name != guild.name {
-            self.name = guild.name.clone();
-        }
+        self.name.clone_from(&guild.name);
         self.nsfw_level = guild.nsfw_level;
         self.owner_id = guild.owner_id;
         self.owner = guild.owner;
         self.permissions = guild.permissions;
-        if self.preferred_locale != guild.preferred_locale {
-            self.preferred_locale = guild.preferred_locale.clone();
-        }
+        self.preferred_locale.clone_from(&guild.preferred_locale);
         self.premium_progress_bar_enabled = guild.premium_progress_bar_enabled;
         self.premium_subscription_count = guild.premium_subscription_count;
         self.premium_tier = guild.premium_tier;
@@ -117,22 +99,13 @@ impl CachedGuild {
         self.system_channel_flags = guild.system_channel_flags;
         self.system_channel_id = guild.system_channel_id;
         self.verification_level = guild.verification_level;
-        if self.vanity_url_code != guild.vanity_url_code {
-            self.vanity_url_code = guild.vanity_url_code.clone();
-        }
+        self.vanity_url_code.clone_from(&guild.vanity_url_code);
         self.widget_channel_id = guild.widget_channel_id;
         self.widget_enabled = guild.widget_enabled;
     }
 }
 
 impl From<&Guild> for CachedGuild {
-    /// # Clones
-    ///
-    /// - [`Self.name`]
-    /// - [`Self.description`]
-    /// - [`Self.features`]
-    /// - [`Self.preferred_locale`]
-    /// - [`Self.vanity_url_code`]
     fn from(guild: &Guild) -> Self {
         Self {
             afk_channel_id: guild.afk_channel_id,

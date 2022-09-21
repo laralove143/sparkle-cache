@@ -269,8 +269,7 @@ pub trait Cache: Backend {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::PrivateChannelMissingRecipient`], also clones the
-    /// channel to create the error
+    /// Returns [`Error::PrivateChannelMissingRecipient`]
     #[doc(hidden)]
     async fn private_channel_recipient(
         &self,

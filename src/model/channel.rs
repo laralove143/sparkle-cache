@@ -51,13 +51,6 @@ pub struct CachedChannel {
 }
 
 impl From<&Channel> for CachedChannel {
-    /// # Clones
-    ///
-    /// - [`Self.name`]
-    /// - [`Self.permission_overwrites`]
-    /// - [`Self.rtc_region`]
-    /// - [`Self.thread_metadata`]
-    /// - [`Self.topic`]
     fn from(channel: &Channel) -> Self {
         Self {
             application_id: channel.application_id,

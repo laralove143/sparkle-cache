@@ -12,8 +12,8 @@ use twilight_model::{
 /// - [`Self.guild_id`] field is added, making it possible to return a guild's
 ///   emojis
 ///
-/// - [`twilight_model::guild::Emoji.user`] is changed a user ID which is cached
-///   separately
+/// - [`twilight_model::guild::Emoji.user`] is changed to a user ID which is
+///   cached separately
 #[derive(Clone, Debug)]
 pub struct CachedEmoji {
     pub guild_id: Id<GuildMarker>,
@@ -29,11 +29,6 @@ pub struct CachedEmoji {
 
 impl CachedEmoji {
     /// Create a cached emoji from a given emoji and guild ID
-    ///
-    /// # Clones
-    ///
-    /// - [`Self.name`]
-    /// - [`Self.roles`]
     #[must_use]
     pub fn from_emoji(emoji: &Emoji, guild_id: Id<GuildMarker>) -> Self {
         Self {

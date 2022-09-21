@@ -71,15 +71,6 @@ impl CachedMember {
     }
 
     /// Update the cached member with the partial member
-    ///
-    /// # Clones
-    ///
-    /// These fields if any of them are changed:
-    ///
-    /// - [`Self.nick`]
-    /// - [`Self.roles`]
-    /// - [`Self.locale`]
-    /// - [`Self.name`]
     pub fn update(&mut self, member: &MemberUpdate) {
         self.guild_avatar = member.avatar;
         self.communication_disabled_until = member.communication_disabled_until;
@@ -87,29 +78,21 @@ impl CachedMember {
             self.deaf = deaf;
         }
         if let Some(mute) = member.mute {
-            self.deaf = mute;
+            self.mute = mute;
         }
-        if self.nick != member.nick {
-            self.nick = member.nick.clone();
-        }
+        self.nick.clone_from(&member.nick);
         self.pending = member.pending;
         self.premium_since = member.premium_since;
-        if self.roles != member.roles {
-            self.roles = member.roles.clone();
-        }
+        self.roles.clone_from(&member.roles);
         self.accent_color = member.user.accent_color;
         self.avatar = member.user.avatar;
         self.banner = member.user.banner;
         self.discriminator = member.user.discriminator;
         self.flags = member.user.flags;
         self.id = member.user.id;
-        if self.locale != member.user.locale {
-            self.locale = member.user.locale.clone();
-        }
+        self.locale.clone_from(&member.user.locale);
         self.mfa_enabled = member.user.mfa_enabled;
-        if self.name != member.user.name {
-            self.name = member.user.name.clone();
-        };
+        self.name.clone_from(&member.user.name);
         self.premium_type = member.user.premium_type;
         self.public_flags = member.user.public_flags;
         self.system = member.user.system;
@@ -117,12 +100,6 @@ impl CachedMember {
 }
 
 impl From<&Member> for CachedMember {
-    /// # Clones
-    ///
-    /// - [`Self.nick`]
-    /// - [`Self.roles`]
-    /// - [`Self.locale`]
-    /// - [`Self.name`]
     fn from(member: &Member) -> Self {
         Self {
             guild_avatar: member.avatar,

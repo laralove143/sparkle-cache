@@ -15,7 +15,7 @@ use twilight_model::{
 
 use crate::{
     backend,
-    model::{CachedChannel, CachedEmoji, CachedGuild, CachedSticker},
+    model::{CachedChannel, CachedEmoji, CachedGuild, CachedMember, CachedSticker},
     Backend,
 };
 
@@ -83,6 +83,9 @@ pub trait Cache: Backend {
                 for sticker in &guild.stickers {
                     self.upsert_sticker(sticker.into()).await?;
                 }
+                for member in &guild.members {
+                    self.upsert_member(member.into()).await?;
+                }
                 self.upsert_guild(CachedGuild::from(&guild.0)).await?;
             }
             Event::GuildUpdate(guild) => {
@@ -95,8 +98,10 @@ pub trait Cache: Backend {
                 if !guild.unavailable {
                     self.delete_guild_channels(guild.id).await?;
                     self.delete_guild_emojis(guild.id).await?;
+                    self.delete_guild_stickers(guild.id).await?;
+                    self.delete_guild_members(guild.id).await?;
+                    self.delete_guild(guild.id).await?;
                 }
-                self.delete_guild(guild.id).await?;
             }
             Event::GuildEmojisUpdate(emojis) => {
                 self.delete_guild_emojis(emojis.guild_id).await?;
@@ -110,16 +115,25 @@ pub trait Cache: Backend {
                     self.upsert_sticker(sticker.into()).await?;
                 }
             }
-            // Event::IntegrationCreate(_) => {}
-            // Event::IntegrationDelete(_) => {}
-            // Event::IntegrationUpdate(_) => {}
-            // Event::InteractionCreate(_) => {}
-            // Event::InviteCreate(_) => {}
-            // Event::InviteDelete(_) => {}
-            // Event::MemberAdd(_) => {}
-            // Event::MemberRemove(_) => {}
-            // Event::MemberUpdate(_) => {}
-            // Event::MemberChunk(_) => {}
+            Event::MemberAdd(member) => {
+                self.upsert_member(CachedMember::from(&member.0)).await?;
+            }
+            Event::MemberUpdate(member) => {
+                if let Some(mut cached_member) =
+                    self.member(member.guild_id, member.user.id).await?
+                {
+                    cached_member.update(member);
+                    self.upsert_member(cached_member).await?;
+                }
+            }
+            Event::MemberChunk(members) => {
+                for member in &members.members {
+                    self.upsert_member(member.into()).await?;
+                }
+            }
+            Event::MemberRemove(member) => {
+                self.delete_member(member.user.id, member.guild_id).await?;
+            }
             // Event::MessageCreate(_) => {}
             // Event::MessageDelete(_) => {}
             // Event::MessageDeleteBulk(_) => {}
@@ -200,6 +214,13 @@ pub trait Cache: Backend {
         &self,
         sticker_id: Id<StickerMarker>,
     ) -> Result<Option<CachedSticker>, Error<Self::Error>>;
+
+    /// Get a cached member by its guild ID and user ID
+    async fn member(
+        &self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> Result<Option<CachedMember>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
     ///

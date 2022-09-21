@@ -11,7 +11,7 @@ use twilight_model::{
 
 use crate::{
     cache,
-    model::{CachedChannel, CachedEmoji, CachedGuild, CachedSticker},
+    model::{CachedChannel, CachedEmoji, CachedGuild, CachedMember, CachedSticker},
 };
 
 /// Implemented on backend errors, for example `Error(sqlx::Error)`
@@ -139,4 +139,19 @@ pub trait Backend {
     ///
     /// This should be something like `DELETE FROM stickers WHERE guild_id = ?`
     async fn delete_guild_stickers(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a member in the cache
+    async fn upsert_member(&self, member: CachedMember) -> Result<(), Self::Error>;
+
+    /// Remove a member from the cache
+    async fn delete_member(
+        &self,
+        user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a guild's stickers from the cache
+    ///
+    /// This should be something like `DELETE FROM members WHERE guild_id = ?`
+    async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 }

@@ -15,6 +15,7 @@ This means these data can't be cached for now:
 - Auto moderation rules
 - Guild integrations
 - Guild scheduled events
+- Guild invites
 - Missing data that you can create a PR to add to this list
 
 ## Support for libraries other than Twilight

@@ -66,6 +66,8 @@
 )]
 #![doc = include_str!("../README.md")]
 
+use core::sync::atomic::{AtomicI64, Ordering};
+
 pub use backend::Backend;
 pub use cache::Cache;
 
@@ -80,3 +82,11 @@ pub mod cache;
 /// Definitions of cached structs, used when the cached data is different from
 /// the event data
 pub mod model;
+
+/// Used to create unique IDs when necessary
+static ID_COUNTER: AtomicI64 = AtomicI64::new(0);
+
+/// Returns a unique ID by adding 1 to [`ID_COUNTER`]
+fn unique_id() -> i64 {
+    ID_COUNTER.fetch_add(1, Ordering::Relaxed)
+}

@@ -1,36 +1,48 @@
-use std::fmt::Debug;
-
 use async_trait::async_trait;
-use thiserror::Error;
+pub use error::Error;
 use twilight_model::{
     channel::{Channel, ChannelType},
     gateway::event::Event,
     guild::Emoji,
     id::{
-        marker::{ChannelMarker, EmojiMarker, GuildMarker, StickerMarker, UserMarker},
+        marker::{
+            ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, StickerMarker,
+            UserMarker,
+        },
         Id,
     },
     user::CurrentUser,
 };
 
 use crate::{
-    backend,
-    model::{CachedChannel, CachedEmoji, CachedGuild, CachedMember, CachedSticker},
+    model::{
+        CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField, CachedEmoji, CachedGuild,
+        CachedMember, CachedMessage, CachedMessageSticker, CachedReaction, CachedSticker,
+    },
     Backend,
 };
 
-/// The errors the cache might return
-#[derive(Error, Debug)]
-pub enum Error<E: backend::Error> {
-    /// An error was returned by the backend
-    #[error("An error was returned by the backend:\n{0}")]
-    Backend(E),
-    /// The DM channel doesn't have any recipients other than the bot itself
-    #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
-    PrivateChannelMissingRecipient(Channel),
-    /// The current user isn't in the cache
-    #[error("The current user isn't in the cache")]
-    CurrentUserMissing,
+/// Put into a mod to allow lints
+#[allow(clippy::std_instead_of_core)]
+mod error {
+    use thiserror::Error;
+    use twilight_model::channel::Channel;
+
+    use crate::backend;
+
+    #[derive(Error, Debug)]
+    /// The errors the cache might return
+    pub enum Error<E: backend::Error> {
+        /// An error was returned by the backend
+        #[error("An error was returned by the backend:\n{0}")]
+        Backend(E),
+        /// The DM channel doesn't have any recipients other than the bot itself
+        #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
+        PrivateChannelMissingRecipient(Channel),
+        /// The current user isn't in the cache
+        #[error("The current user isn't in the cache")]
+        CurrentUserMissing,
+    }
 }
 
 /// Provides methods to update the cache and get data from it
@@ -62,6 +74,7 @@ pub trait Cache: Backend {
     /// On `ChannelCreate`, `ChannelUpdate` and `ChannelDelete` events when the
     /// channel is a DM channel, might return
     /// [`Error::PrivateChannelMissingRecipient`]
+    #[allow(clippy::too_many_lines)]
     async fn update(&self, event: &Event) -> Result<(), Error<Self::Error>> {
         match event {
             Event::ChannelCreate(channel) => {
@@ -134,10 +147,73 @@ pub trait Cache: Backend {
             Event::MemberRemove(member) => {
                 self.delete_member(member.user.id, member.guild_id).await?;
             }
-            // Event::MessageCreate(_) => {}
-            // Event::MessageDelete(_) => {}
-            // Event::MessageDeleteBulk(_) => {}
-            // Event::MessageUpdate(_) => {}
+            Event::MessageCreate(message) => {
+                for attachment in message.attachments.clone() {
+                    self.upsert_attachment(CachedAttachment::from_attachment(
+                        attachment, message.id,
+                    ))
+                    .await?;
+                }
+                for reaction in message.reactions.clone() {
+                    self.upsert_reaction(CachedReaction::from_reaction(reaction, message.id))
+                        .await?;
+                }
+                for sticker in message.sticker_items.clone() {
+                    self.upsert_message_sticker(CachedMessageSticker::from_sticker(
+                        sticker, message.id,
+                    ))
+                    .await?;
+                }
+                for embed in message.embeds.clone() {
+                    let fields = embed.fields.clone();
+                    let cached_embed = CachedEmbed::from_embed(embed, message.id);
+                    for field in fields {
+                        self.upsert_embed_field(CachedEmbedField::from_embed_field(
+                            field,
+                            cached_embed.id,
+                        ))
+                        .await?;
+                    }
+                    self.upsert_embed(cached_embed).await?;
+                }
+                self.upsert_message(CachedMessage::from(&message.0)).await?;
+            }
+            Event::MessageUpdate(message) => {
+                if let Some(mut cached_message) = self.message(message.id).await? {
+                    cached_message.update(message);
+                    if let Some(attachments) = &message.attachments {
+                        for attachment in attachments.clone() {
+                            self.upsert_attachment(CachedAttachment::from_attachment(
+                                attachment, message.id,
+                            ))
+                            .await?;
+                        }
+                    }
+                    if let Some(embeds) = &message.embeds {
+                        for embed in embeds.clone() {
+                            let fields = embed.fields.clone();
+                            let cached_embed = CachedEmbed::from_embed(embed, message.id);
+                            for field in fields {
+                                self.upsert_embed_field(CachedEmbedField::from_embed_field(
+                                    field,
+                                    cached_embed.id,
+                                ))
+                                .await?;
+                            }
+                            self.upsert_embed(cached_embed).await?;
+                        }
+                    }
+                    self.upsert_message(cached_message).await?;
+                }
+            }
+            Event::MessageDelete(message) => {
+                self.remove_message(message.id).await?;
+            }
+            Event::MessageDeleteBulk(messages) => {
+                for message_id in &messages.ids {
+                    self.remove_message(*message_id).await?;
+                }
+            }
             // Event::PresenceUpdate(_) => {}
             // Event::PresencesReplace => {}
             // Event::ReactionAdd(_) => {}
@@ -222,6 +298,42 @@ pub trait Cache: Backend {
         user_id: Id<UserMarker>,
     ) -> Result<Option<CachedMember>, Error<Self::Error>>;
 
+    /// Get a cached message by its ID
+    async fn message(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Option<CachedMessage>, Error<Self::Error>>;
+
+    /// Get embeds of a message by its ID
+    async fn embeds(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedEmbed>, Error<Self::Error>>;
+
+    /// Get fields of an embed by its ID
+    async fn embed_fields(
+        &self,
+        embed_id: Id<GenericMarker>,
+    ) -> Result<Vec<CachedEmbedField>, Error<Self::Error>>;
+
+    /// Get attachments of a message by its ID
+    async fn attachments(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedAttachment>, Error<Self::Error>>;
+
+    /// Get reactions of a message by its ID
+    async fn reactions(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
+
+    /// Get stickers of a message by its ID
+    async fn stickers(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedMessageSticker>, Error<Self::Error>>;
+
     /// Updates the cache with the channel
     ///
     /// # Errors
@@ -294,6 +406,24 @@ pub trait Cache: Backend {
     ) -> Result<(), Error<Self::Error>> {
         self.upsert_emoji(CachedEmoji::from_emoji(emoji, guild_id))
             .await?;
+        Ok(())
+    }
+
+    /// Removes the message from the cache
+    #[doc(hidden)]
+    async fn remove_message(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Error<Self::Error>> {
+        let embeds = self.embeds(message_id).await?;
+        for embed in embeds {
+            self.delete_embed_fields(embed.id).await?;
+            self.delete_embed(embed.id).await?;
+        }
+        self.delete_message_attachments(message_id).await?;
+        self.delete_message_reactions(message_id).await?;
+        self.delete_message_stickers(message_id).await?;
+        self.delete_message(message_id).await?;
         Ok(())
     }
 }

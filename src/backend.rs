@@ -1,9 +1,12 @@
-use std::fmt::Display;
+use core::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
     id::{
-        marker::{ChannelMarker, EmojiMarker, GuildMarker, StickerMarker, UserMarker},
+        marker::{
+            ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, StickerMarker,
+            UserMarker,
+        },
         Id,
     },
     user::CurrentUser,
@@ -11,7 +14,10 @@ use twilight_model::{
 
 use crate::{
     cache,
-    model::{CachedChannel, CachedEmoji, CachedGuild, CachedMember, CachedSticker},
+    model::{
+        CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField, CachedEmoji, CachedGuild,
+        CachedMember, CachedMessage, CachedMessageSticker, CachedReaction, CachedSticker,
+    },
 };
 
 /// Implemented on backend errors, for example `Error(sqlx::Error)`
@@ -154,4 +160,64 @@ pub trait Backend {
     ///
     /// This should be something like `DELETE FROM members WHERE guild_id = ?`
     async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached message in the cache
+    async fn upsert_message(&self, message: CachedMessage) -> Result<(), Self::Error>;
+
+    /// Remove a cached message from the cache
+    async fn delete_message(&self, message_id: Id<MessageMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached embed in the cache
+    async fn upsert_embed(&self, embed: CachedEmbed) -> Result<(), Self::Error>;
+
+    /// Remove a cached embed from the cache
+    async fn delete_embed(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached embed field in the cache
+    async fn upsert_embed_field(&self, embed_field: CachedEmbedField) -> Result<(), Self::Error>;
+
+    /// Remove an embed's fields from the cache
+    ///
+    /// This should be something like `DELETE FROM embed_fields WHERE embed_id =
+    /// ?`
+    async fn delete_embed_fields(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached attachment in the cache
+    async fn upsert_attachment(&self, attachment: CachedAttachment) -> Result<(), Self::Error>;
+
+    /// Remove a message's attachments from the cache
+    ///
+    /// This should be something like `DELETE FROM attachments WHERE message_id
+    /// = ?`
+    async fn delete_message_attachments(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached reaction in the cache
+    async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
+
+    /// Remove a message's reactions from the cache
+    ///
+    /// This should be something like `DELETE FROM reactions WHERE message_id =
+    /// ?`
+    async fn delete_message_reactions(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached message sticker in the cache
+    async fn upsert_message_sticker(
+        &self,
+        sticker: CachedMessageSticker,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a message's stickers from the cache
+    ///
+    /// This should be something like `DELETE FROM message_stickers WHERE
+    /// message_id = ?`
+    async fn delete_message_stickers(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Self::Error>;
 }

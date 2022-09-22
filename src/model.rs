@@ -9,6 +9,10 @@ pub use channel::CachedChannel;
 pub use emoji::CachedEmoji;
 pub use guild::CachedGuild;
 pub use member::CachedMember;
+pub use message::{
+    CachedAttachment, CachedEmbed, CachedEmbedField, CachedMessage, CachedMessageSticker,
+    CachedReaction,
+};
 pub use sticker::CachedSticker;
 
 /// Definition and implementations for [`CachedChannel`]
@@ -19,5 +23,7 @@ mod emoji;
 mod guild;
 /// Definition and implementations for [`CachedMember`]
 mod member;
+/// Definition and implementations for [`CachedMessage`]
+mod message;
 /// Definition and implementations for [`CachedSticker`]
 mod sticker;

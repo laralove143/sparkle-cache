@@ -14,8 +14,8 @@ use twilight_model::{
 /// [`twilight_model::guild::member::Member`] except:
 ///
 /// - [`twilight_model::guild::member::Member.user`] is changed its fields being
-///   flattened, since the current user is cached separately and member users
-///   are rarely duplicates
+///   flattened since member users are rarely duplicates, making it easier to
+///   cache
 ///
 /// - [`twilight_model::guild::member::Member.avatar`] is renamed to
 ///   [`Self.guild_avatar`]

@@ -183,6 +183,18 @@ pub trait Backend {
     /// ?`
     async fn delete_embed_fields(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
+    /// Get cached embeds of a message by its ID
+    async fn cached_embeds(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedEmbed>, Self::Error>;
+
+    /// Get fields of an embed by its ID
+    async fn embed_fields(
+        &self,
+        embed_id: Id<GenericMarker>,
+    ) -> Result<Vec<CachedEmbedField>, Self::Error>;
+
     /// Add or replace a cached attachment in the cache
     async fn upsert_attachment(&self, attachment: CachedAttachment) -> Result<(), Self::Error>;
 

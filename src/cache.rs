@@ -6,8 +6,7 @@ use twilight_model::{
     guild::Emoji,
     id::{
         marker::{
-            ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, StickerMarker,
-            UserMarker,
+            ChannelMarker, EmojiMarker, GuildMarker, MessageMarker, StickerMarker, UserMarker,
         },
         Id,
     },
@@ -193,7 +192,7 @@ pub trait Cache: Backend {
                     }
                     if let Some(embeds) = &message.embeds {
                         let cached_embeds = self.embeds(message.id).await?;
-                        for embed in cached_embeds {
+                        for (embed, _) in cached_embeds {
                             self.delete_embed_fields(embed.id).await?;
                             self.delete_embed(embed.id).await?;
                         }
@@ -329,13 +328,15 @@ pub trait Cache: Backend {
     async fn embeds(
         &self,
         message_id: Id<MessageMarker>,
-    ) -> Result<Vec<CachedEmbed>, Error<Self::Error>>;
-
-    /// Get fields of an embed by its ID
-    async fn embed_fields(
-        &self,
-        embed_id: Id<GenericMarker>,
-    ) -> Result<Vec<CachedEmbedField>, Error<Self::Error>>;
+    ) -> Result<Vec<(CachedEmbed, Vec<CachedEmbedField>)>, Error<Self::Error>> {
+        let mut embeds = vec![];
+        let cached_embeds = self.cached_embeds(message_id).await?;
+        for embed in cached_embeds {
+            let fields = self.embed_fields(embed.id).await?;
+            embeds.push((embed, fields));
+        }
+        Ok(embeds)
+    }
 
     /// Get attachments of a message by its ID
     async fn attachments(
@@ -437,7 +438,7 @@ pub trait Cache: Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Error<Self::Error>> {
         let embeds = self.embeds(message_id).await?;
-        for embed in embeds {
+        for (embed, _) in embeds {
             self.delete_embed_fields(embed.id).await?;
             self.delete_embed(embed.id).await?;
         }

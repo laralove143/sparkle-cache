@@ -38,7 +38,7 @@ mod error {
         Backend(E),
         /// The DM channel doesn't have any recipients other than the bot itself
         #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
-        PrivateChannelMissingRecipient(Channel),
+        PrivateChannelMissingRecipient(Box<Channel>),
         /// The current user isn't in the cache
         #[error("The current user isn't in the cache")]
         CurrentUserMissing,
@@ -392,7 +392,7 @@ pub trait Cache: Backend {
             .recipients
             .as_ref()
             .and_then(|recipients| recipients.iter().find(|user| user.id == current_user_id))
-            .ok_or_else(|| Error::PrivateChannelMissingRecipient(channel.clone()))?
+            .ok_or_else(|| Error::PrivateChannelMissingRecipient(Box::new(channel.clone())))?
             .id;
         Ok(recipient_user_id)
     }

@@ -213,33 +213,6 @@ impl CachedAttachment {
 }
 
 /// A cached reaction, it is the same as
-/// [`twilight_model::channel::message::MessageReaction`] except:
-///
-/// - [`Self.message_id`] field is added, making it possible to return a
-///   message's reactions
-#[derive(Clone, Debug)]
-pub struct CachedReaction {
-    pub message_id: Id<MessageMarker>,
-    pub count: u64,
-    pub emoji: ReactionType,
-    pub me: bool,
-}
-
-impl CachedReaction {
-    /// Create a cached reaction from a given reaction and message ID
-    #[allow(clippy::missing_const_for_fn)]
-    #[must_use]
-    pub fn from_reaction(reaction: MessageReaction, message_id: Id<MessageMarker>) -> Self {
-        Self {
-            message_id,
-            count: reaction.count,
-            emoji: reaction.emoji,
-            me: reaction.me,
-        }
-    }
-}
-
-/// A cached reaction, it is the same as
 /// [`twilight_model::channel::message::sticker::MessageSticker`] except:
 ///
 /// - [`Self.message_id`] field is added, making it possible to return a

@@ -154,10 +154,6 @@ pub trait Cache: Backend {
                     ))
                     .await?;
                 }
-                for reaction in message.reactions.clone() {
-                    self.upsert_reaction(CachedReaction::from_reaction(reaction, message.id))
-                        .await?;
-                }
                 for sticker in message.sticker_items.clone() {
                     self.upsert_message_sticker(CachedMessageSticker::from_sticker(
                         sticker, message.id,
@@ -232,10 +228,25 @@ pub trait Cache: Backend {
                 self.upsert_presence(CachedPresence::from(&presence.0))
                     .await?;
             }
-            // Event::ReactionAdd(_) => {}
-            // Event::ReactionRemove(_) => {}
-            // Event::ReactionRemoveAll(_) => {}
-            // Event::ReactionRemoveEmoji(_) => {}
+            Event::ReactionAdd(reaction) => {
+                self.upsert_reaction(CachedReaction::from(&reaction.0))
+                    .await?;
+            }
+            Event::ReactionRemove(reaction) => {
+                self.delete_reaction(
+                    reaction.message_id,
+                    reaction.user_id,
+                    reaction.emoji.clone(),
+                )
+                .await?;
+            }
+            Event::ReactionRemoveEmoji(reaction) => {
+                self.delete_message_reactions_by_emoji(reaction.message_id, reaction.emoji.clone())
+                    .await?;
+            }
+            Event::ReactionRemoveAll(reaction) => {
+                self.delete_message_reactions(reaction.message_id).await?;
+            }
             // Event::Ready(_) => {}
             // Event::Resumed => {}
             // Event::RoleCreate(_) => {}
@@ -344,17 +355,17 @@ pub trait Cache: Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedAttachment>, Error<Self::Error>>;
 
-    /// Get reactions of a message by its ID
-    async fn reactions(
-        &self,
-        message_id: Id<MessageMarker>,
-    ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
-
     /// Get stickers of a message by its ID
     async fn stickers(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedMessageSticker>, Error<Self::Error>>;
+
+    /// Get reactions of a message by its ID
+    async fn reactions(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
     ///

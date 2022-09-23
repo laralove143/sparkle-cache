@@ -11,9 +11,9 @@ pub use guild::CachedGuild;
 pub use member::CachedMember;
 pub use message::{
     CachedAttachment, CachedEmbed, CachedEmbedField, CachedMessage, CachedMessageSticker,
-    CachedReaction,
 };
 pub use presence::{CachedActivity, CachedPresence};
+pub use reaction::CachedReaction;
 pub use sticker::CachedSticker;
 
 /// Definition and implementations for [`CachedChannel`]
@@ -28,5 +28,7 @@ mod member;
 mod message;
 /// Definition and implementations for [`CachedPresence`] and its fields
 mod presence;
+/// Definition and implementations for [`CachedReaction`]
+mod reaction;
 /// Definition and implementations for [`CachedSticker`]
 mod sticker;

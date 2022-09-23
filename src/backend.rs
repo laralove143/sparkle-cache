@@ -2,6 +2,7 @@ use core::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
+    channel::ReactionType,
     id::{
         marker::{
             ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, StickerMarker,
@@ -207,18 +208,6 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached reaction in the cache
-    async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
-
-    /// Remove a message's reactions from the cache
-    ///
-    /// This should be something like `DELETE FROM reactions WHERE message_id =
-    /// ?`
-    async fn delete_message_reactions(
-        &self,
-        message_id: Id<MessageMarker>,
-    ) -> Result<(), Self::Error>;
-
     /// Add or replace a cached message sticker in the cache
     async fn upsert_message_sticker(
         &self,
@@ -248,4 +237,31 @@ pub trait Backend {
     /// This should be something like `DELETE FROM activities WHERE
     /// user_id = ?`
     async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached reaction in the cache
+    async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
+
+    /// Remove a cached reaction from the cache
+    async fn delete_reaction(
+        &self,
+        message_id: Id<MessageMarker>,
+        user_id: Id<UserMarker>,
+        emoji: ReactionType,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a message's reactions from the cache
+    async fn delete_message_reactions_by_emoji(
+        &self,
+        message_id: Id<MessageMarker>,
+        emoji: ReactionType,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a message's reactions from the cache
+    ///
+    /// This should be something like `DELETE FROM reactions WHERE message_id =
+    /// ?`
+    async fn delete_message_reactions(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Self::Error>;
 }

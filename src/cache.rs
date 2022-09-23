@@ -316,6 +316,10 @@ pub trait Cache: Backend {
     ) -> Result<Option<CachedMember>, Error<Self::Error>>;
 
     /// Get a cached message by its ID
+    ///
+    /// The returned message doesn't contain embeds, attachments, reactions or
+    /// stickers, since they're cached separately and the method doesn't query
+    /// them for you to reduce overhead in case you don't need them
     async fn message(
         &self,
         message_id: Id<MessageMarker>,

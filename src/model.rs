@@ -13,6 +13,7 @@ pub use message::{
     CachedAttachment, CachedEmbed, CachedEmbedField, CachedMessage, CachedMessageSticker,
     CachedReaction,
 };
+pub use presence::{CachedActivity, CachedPresence};
 pub use sticker::CachedSticker;
 
 /// Definition and implementations for [`CachedChannel`]
@@ -23,7 +24,7 @@ mod emoji;
 mod guild;
 /// Definition and implementations for [`CachedMember`]
 mod member;
-/// Definition and implementations for [`CachedMessage`]
+/// Definition and implementations for [`CachedMessage`] and its fields
 mod message;
 /// Definition and implementations for [`CachedPresence`] and its fields
 mod presence;

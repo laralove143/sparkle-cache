@@ -25,5 +25,7 @@ mod guild;
 mod member;
 /// Definition and implementations for [`CachedMessage`]
 mod message;
+/// Definition and implementations for [`CachedPresence`] and its fields
+mod presence;
 /// Definition and implementations for [`CachedSticker`]
 mod sticker;

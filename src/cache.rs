@@ -16,8 +16,9 @@ use twilight_model::{
 
 use crate::{
     model::{
-        CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField, CachedEmoji, CachedGuild,
-        CachedMember, CachedMessage, CachedMessageSticker, CachedReaction, CachedSticker,
+        CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
+        CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
+        CachedPresence, CachedReaction, CachedSticker,
     },
     Backend,
 };
@@ -182,6 +183,7 @@ pub trait Cache: Backend {
                 if let Some(mut cached_message) = self.message(message.id).await? {
                     cached_message.update(message);
                     if let Some(attachments) = &message.attachments {
+                        self.delete_message_attachments(message.id).await?;
                         for attachment in attachments.clone() {
                             self.upsert_attachment(CachedAttachment::from_attachment(
                                 attachment, message.id,
@@ -190,10 +192,14 @@ pub trait Cache: Backend {
                         }
                     }
                     if let Some(embeds) = &message.embeds {
+                        let cached_embeds = self.embeds(message.id).await?;
+                        for embed in cached_embeds {
+                            self.delete_embed_fields(embed.id).await?;
+                            self.delete_embed(embed.id).await?;
+                        }
                         for embed in embeds.clone() {
-                            let fields = embed.fields.clone();
-                            let cached_embed = CachedEmbed::from_embed(embed, message.id);
-                            for field in fields {
+                            let cached_embed = CachedEmbed::from_embed(embed.clone(), message.id);
+                            for field in embed.fields.clone() {
                                 self.upsert_embed_field(CachedEmbedField::from_embed_field(
                                     field,
                                     cached_embed.id,
@@ -214,8 +220,19 @@ pub trait Cache: Backend {
                     self.remove_message(*message_id).await?;
                 }
             }
-            // Event::PresenceUpdate(_) => {}
-            // Event::PresencesReplace => {}
+            Event::PresenceUpdate(presence) => {
+                self.delete_user_activities(presence.user.id()).await?;
+                self.delete_presence(presence.user.id()).await?;
+                for activity in &presence.activities {
+                    self.upsert_activity(CachedActivity::from_activity(
+                        activity,
+                        presence.user.id(),
+                    ))
+                    .await?;
+                }
+                self.upsert_presence(CachedPresence::from(&presence.0))
+                    .await?;
+            }
             // Event::ReactionAdd(_) => {}
             // Event::ReactionRemove(_) => {}
             // Event::ReactionRemoveAll(_) => {}

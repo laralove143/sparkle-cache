@@ -15,8 +15,9 @@ use twilight_model::{
 use crate::{
     cache,
     model::{
-        CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField, CachedEmoji, CachedGuild,
-        CachedMember, CachedMessage, CachedMessageSticker, CachedReaction, CachedSticker,
+        CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
+        CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
+        CachedPresence, CachedReaction, CachedSticker,
     },
 };
 
@@ -220,4 +221,19 @@ pub trait Backend {
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached presence in the cache
+    async fn upsert_presence(&self, presence: CachedPresence) -> Result<(), Self::Error>;
+
+    /// Remove a presence from the cache
+    async fn delete_presence(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a cached activity in the cache
+    async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
+
+    /// Remove a user's activities from the cache
+    ///
+    /// This should be something like `DELETE FROM activities WHERE
+    /// user_id = ?`
+    async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 }

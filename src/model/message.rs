@@ -3,9 +3,9 @@ use twilight_model::{
         embed::{Embed, EmbedField},
         message::{
             sticker::{MessageSticker, StickerFormatType},
-            MessageActivityType, MessageFlags, MessageReaction, MessageType,
+            MessageActivityType, MessageFlags, MessageType,
         },
-        Attachment, Message, ReactionType,
+        Attachment, Message,
     },
     gateway::payload::incoming::MessageUpdate,
     id::{

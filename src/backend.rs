@@ -2,11 +2,11 @@ use core::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
-    channel::ReactionType,
+    channel::{ReactionType, StageInstance},
     id::{
         marker::{
             ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, RoleMarker,
-            StickerMarker, UserMarker,
+            StageMarker, StickerMarker, UserMarker,
         },
         Id,
     },
@@ -276,7 +276,7 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add or replace a role to the cache
+    /// Add or replace a role in the cache
     async fn upsert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
 
     /// Remove a role from the cache
@@ -286,4 +286,19 @@ pub trait Backend {
     ///
     /// This should be something like `DELETE FROM roles WHERE guild_id = ?`
     async fn delete_guild_roles(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a stage instance in the cache
+    async fn upsert_stage_instance(&self, stage: StageInstance) -> Result<(), Self::Error>;
+
+    /// Remove a stage instance from the cache
+    async fn delete_stage_instance(&self, stage_id: Id<StageMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a guild's stage instance from the cache
+    ///
+    /// This should be something like `DELETE FROM stage_instances WHERE
+    /// guild_id = ?`
+    async fn delete_guild_stage_instances(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<(), Self::Error>;
 }

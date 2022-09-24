@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 pub use error::Error;
 use twilight_model::{
-    channel::{Channel, ChannelType},
+    channel::{Channel, ChannelType, StageInstance},
     gateway::event::Event,
     guild::Emoji,
     id::{
         marker::{
-            ChannelMarker, EmojiMarker, GuildMarker, MessageMarker, RoleMarker, StickerMarker,
-            UserMarker,
+            ChannelMarker, EmojiMarker, GuildMarker, MessageMarker, RoleMarker, StageMarker,
+            StickerMarker, UserMarker,
         },
         Id,
     },
@@ -107,7 +107,9 @@ pub trait Cache: Backend {
                     self.upsert_role(CachedRole::from_role(role.clone(), guild.id))
                         .await?;
                 }
-                // for instance in &guild.stage_instances {}
+                for stage in &guild.stage_instances {
+                    self.upsert_stage_instance(stage.clone()).await?;
+                }
                 self.upsert_guild(CachedGuild::from(&guild.0)).await?;
             }
             Event::GuildUpdate(guild) => {
@@ -124,6 +126,7 @@ pub trait Cache: Backend {
                     self.delete_guild_members(guild.id).await?;
                     self.delete_guild_presences(guild.id).await?;
                     self.delete_guild_roles(guild.id).await?;
+                    self.delete_guild_stage_instances(guild.id).await?;
                     self.delete_guild(guild.id).await?;
                 }
             }
@@ -275,16 +278,15 @@ pub trait Cache: Backend {
             Event::RoleDelete(role) => {
                 self.delete_role(role.role_id).await?;
             }
-            // Event::ShardConnected(_) => {}
-            // Event::ShardConnecting(_) => {}
-            // Event::ShardDisconnected(_) => {}
-            // Event::ShardIdentifying(_) => {}
-            // Event::ShardReconnecting(_) => {}
-            // Event::ShardPayload(_) => {}
-            // Event::ShardResuming(_) => {}
-            // Event::StageInstanceCreate(_) => {}
-            // Event::StageInstanceDelete(_) => {}
-            // Event::StageInstanceUpdate(_) => {}
+            Event::StageInstanceCreate(stage) => {
+                self.upsert_stage_instance(stage.clone().0).await?;
+            }
+            Event::StageInstanceUpdate(stage) => {
+                self.upsert_stage_instance(stage.clone().0).await?;
+            }
+            Event::StageInstanceDelete(stage) => {
+                self.delete_stage_instance(stage.id).await?;
+            }
             // Event::ThreadCreate(_) => {}
             // Event::ThreadDelete(_) => {}
             // Event::ThreadListSync(_) => {}
@@ -394,6 +396,12 @@ pub trait Cache: Backend {
         &self,
         role_id: Id<RoleMarker>,
     ) -> Result<Option<CachedReaction>, Error<Self::Error>>;
+
+    /// Get a cached stage instance by its ID
+    async fn stage_instance(
+        &self,
+        stage_id: Id<StageMarker>,
+    ) -> Result<Option<StageInstance>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
     ///

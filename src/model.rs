@@ -14,6 +14,7 @@ pub use message::{
 };
 pub use presence::{CachedActivity, CachedPresence};
 pub use reaction::CachedReaction;
+pub use role::CachedRole;
 pub use sticker::CachedSticker;
 
 /// Definition and implementations for [`CachedChannel`]
@@ -30,5 +31,7 @@ mod message;
 mod presence;
 /// Definition and implementations for [`CachedReaction`]
 mod reaction;
+/// Definition and implementations for [`CachedRole`]
+mod role;
 /// Definition and implementations for [`CachedSticker`]
 mod sticker;

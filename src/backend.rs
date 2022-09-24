@@ -5,8 +5,8 @@ use twilight_model::{
     channel::ReactionType,
     id::{
         marker::{
-            ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, StickerMarker,
-            UserMarker,
+            ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, RoleMarker,
+            StickerMarker, UserMarker,
         },
         Id,
     },
@@ -18,7 +18,7 @@ use crate::{
     model::{
         CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
         CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
-        CachedPresence, CachedReaction, CachedSticker,
+        CachedPresence, CachedReaction, CachedRole, CachedSticker,
     },
 };
 
@@ -275,4 +275,15 @@ pub trait Backend {
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
+
+    /// Add or replace a role to the cache
+    async fn upsert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
+
+    /// Remove a role from the cache
+    async fn delete_role(&self, role_id: Id<RoleMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a guild's roles from the cache
+    ///
+    /// This should be something like `DELETE FROM roles WHERE guild_id = ?`
+    async fn delete_guild_roles(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 }

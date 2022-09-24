@@ -6,7 +6,8 @@ use twilight_model::{
     guild::Emoji,
     id::{
         marker::{
-            ChannelMarker, EmojiMarker, GuildMarker, MessageMarker, StickerMarker, UserMarker,
+            ChannelMarker, EmojiMarker, GuildMarker, MessageMarker, RoleMarker, StickerMarker,
+            UserMarker,
         },
         Id,
     },
@@ -17,7 +18,7 @@ use crate::{
     model::{
         CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
         CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
-        CachedPresence, CachedReaction, CachedSticker,
+        CachedPresence, CachedReaction, CachedRole, CachedSticker,
     },
     Backend,
 };
@@ -102,7 +103,10 @@ pub trait Cache: Backend {
                 for presence in &guild.presences {
                     self.upsert_presence(presence.into()).await?;
                 }
-                // for role in &guild.roles {}
+                for role in &guild.roles {
+                    self.upsert_role(CachedRole::from_role(role.clone(), guild.id))
+                        .await?;
+                }
                 // for instance in &guild.stage_instances {}
                 self.upsert_guild(CachedGuild::from(&guild.0)).await?;
             }
@@ -119,6 +123,7 @@ pub trait Cache: Backend {
                     self.delete_guild_stickers(guild.id).await?;
                     self.delete_guild_members(guild.id).await?;
                     self.delete_guild_presences(guild.id).await?;
+                    self.delete_guild_roles(guild.id).await?;
                     self.delete_guild(guild.id).await?;
                 }
             }
@@ -259,9 +264,17 @@ pub trait Cache: Backend {
             Event::UserUpdate(user) => {
                 self.set_current_user(user.0.clone()).await?;
             }
-            // Event::RoleCreate(_) => {}
-            // Event::RoleDelete(_) => {}
-            // Event::RoleUpdate(_) => {}
+            Event::RoleCreate(role) => {
+                self.upsert_role(CachedRole::from_role(role.role.clone(), role.guild_id))
+                    .await?;
+            }
+            Event::RoleUpdate(role) => {
+                self.upsert_role(CachedRole::from_role(role.role.clone(), role.guild_id))
+                    .await?;
+            }
+            Event::RoleDelete(role) => {
+                self.delete_role(role.role_id).await?;
+            }
             // Event::ShardConnected(_) => {}
             // Event::ShardConnecting(_) => {}
             // Event::ShardDisconnected(_) => {}
@@ -375,6 +388,12 @@ pub trait Cache: Backend {
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
+
+    /// Get a cached role by its ID
+    async fn role(
+        &self,
+        role_id: Id<RoleMarker>,
+    ) -> Result<Option<CachedReaction>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
     ///

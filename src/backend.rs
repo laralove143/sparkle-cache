@@ -126,10 +126,10 @@ pub trait Backend {
     /// Remove a channel from the cache
     async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add or replace a emoji in the cache
+    /// Add or replace an emoji in the cache
     async fn upsert_emoji(&self, emoji: CachedEmoji) -> Result<(), Self::Error>;
 
-    /// Remove a emoji from the cache
+    /// Remove an emoji from the cache
     async fn delete_emoji(&self, emoji_id: Id<EmojiMarker>) -> Result<(), Self::Error>;
 
     /// Remove a guild's emojis from the cache
@@ -169,13 +169,13 @@ pub trait Backend {
     /// Remove a cached message from the cache
     async fn delete_message(&self, message_id: Id<MessageMarker>) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached embed in the cache
+    /// Add a cached embed to the cache
     async fn upsert_embed(&self, embed: CachedEmbed) -> Result<(), Self::Error>;
 
     /// Remove a cached embed from the cache
     async fn delete_embed(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached embed field in the cache
+    /// Add a cached embed field to the cache
     async fn upsert_embed_field(&self, embed_field: CachedEmbedField) -> Result<(), Self::Error>;
 
     /// Remove an embed's fields from the cache
@@ -185,18 +185,22 @@ pub trait Backend {
     async fn delete_embed_fields(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
     /// Get cached embeds of a message by its ID
+    ///
+    /// This method is used internally in `super::cache::Cache::embeds`
     async fn cached_embeds(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedEmbed>, Self::Error>;
 
     /// Get fields of an embed by its ID
+    ///
+    /// This method is used internally in `super::cache::Cache::embeds`
     async fn embed_fields(
         &self,
         embed_id: Id<GenericMarker>,
     ) -> Result<Vec<CachedEmbedField>, Self::Error>;
 
-    /// Add or replace a cached attachment in the cache
+    /// Add a cached attachment to the cache
     async fn upsert_attachment(&self, attachment: CachedAttachment) -> Result<(), Self::Error>;
 
     /// Remove a message's attachments from the cache
@@ -229,16 +233,20 @@ pub trait Backend {
     /// Remove a presence from the cache
     async fn delete_presence(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached activity in the cache
+    /// Remove a guild's presences from the cache
+    ///
+    /// This should be something like `DELETE FROM presences WHERE guild_id = ?`
+    async fn delete_guild_presences(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add a cached activity to the cache
     async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
 
     /// Remove a user's activities from the cache
     ///
-    /// This should be something like `DELETE FROM activities WHERE
-    /// user_id = ?`
+    /// This should be something like `DELETE FROM activities WHERE user_id = ?`
     async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached reaction in the cache
+    /// Add a cached reaction to the cache
     async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
 
     /// Remove a cached reaction from the cache
@@ -249,7 +257,10 @@ pub trait Backend {
         emoji: ReactionType,
     ) -> Result<(), Self::Error>;
 
-    /// Remove a message's reactions from the cache
+    /// Remove a message's reactions of the given emoji from the cache
+    ///
+    /// This should be something like `DELETE FROM reactions WHERE message_id =
+    /// ? AND emoji = ?`
     async fn delete_message_reactions_by_emoji(
         &self,
         message_id: Id<MessageMarker>,

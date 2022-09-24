@@ -87,7 +87,7 @@ pub trait Cache: Backend {
                 self.delete_channel(channel.id).await?;
             }
             Event::GuildCreate(guild) => {
-                for channel in &guild.channels {
+                for channel in guild.channels.iter().chain(&guild.threads) {
                     self.add_channel(channel).await?;
                 }
                 for emoji in &guild.emojis {
@@ -99,6 +99,11 @@ pub trait Cache: Backend {
                 for member in &guild.members {
                     self.upsert_member(member.into()).await?;
                 }
+                for presence in &guild.presences {
+                    self.upsert_presence(presence.into()).await?;
+                }
+                // for role in &guild.roles {}
+                // for instance in &guild.stage_instances {}
                 self.upsert_guild(CachedGuild::from(&guild.0)).await?;
             }
             Event::GuildUpdate(guild) => {
@@ -113,6 +118,7 @@ pub trait Cache: Backend {
                     self.delete_guild_emojis(guild.id).await?;
                     self.delete_guild_stickers(guild.id).await?;
                     self.delete_guild_members(guild.id).await?;
+                    self.delete_guild_presences(guild.id).await?;
                     self.delete_guild(guild.id).await?;
                 }
             }
@@ -131,17 +137,17 @@ pub trait Cache: Backend {
             Event::MemberAdd(member) => {
                 self.upsert_member(CachedMember::from(&member.0)).await?;
             }
+            Event::MemberChunk(members) => {
+                for member in &members.members {
+                    self.upsert_member(member.into()).await?;
+                }
+            }
             Event::MemberUpdate(member) => {
                 if let Some(mut cached_member) =
                     self.member(member.guild_id, member.user.id).await?
                 {
                     cached_member.update(member);
                     self.upsert_member(cached_member).await?;
-                }
-            }
-            Event::MemberChunk(members) => {
-                for member in &members.members {
-                    self.upsert_member(member.into()).await?;
                 }
             }
             Event::MemberRemove(member) => {
@@ -193,8 +199,9 @@ pub trait Cache: Backend {
                             self.delete_embed(embed.id).await?;
                         }
                         for embed in embeds.clone() {
-                            let cached_embed = CachedEmbed::from_embed(embed.clone(), message.id);
-                            for field in embed.fields.clone() {
+                            let fields = embed.fields.clone();
+                            let cached_embed = CachedEmbed::from_embed(embed, message.id);
+                            for field in fields {
                                 self.upsert_embed_field(CachedEmbedField::from_embed_field(
                                     field,
                                     cached_embed.id,
@@ -217,7 +224,6 @@ pub trait Cache: Backend {
             }
             Event::PresenceUpdate(presence) => {
                 self.delete_user_activities(presence.user.id()).await?;
-                self.delete_presence(presence.user.id()).await?;
                 for activity in &presence.activities {
                     self.upsert_activity(CachedActivity::from_activity(
                         activity,

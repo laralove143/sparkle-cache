@@ -344,7 +344,7 @@ pub trait Cache: Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<Option<CachedMessage>, Error<Self::Error>>;
 
-    /// Get embeds of a message by its ID
+    /// Get cached embeds of a message by its ID
     async fn embeds(
         &self,
         message_id: Id<MessageMarker>,
@@ -358,19 +358,19 @@ pub trait Cache: Backend {
         Ok(embeds)
     }
 
-    /// Get attachments of a message by its ID
+    /// Get cached attachments of a message by its ID
     async fn attachments(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedAttachment>, Error<Self::Error>>;
 
-    /// Get stickers of a message by its ID
+    /// Get cached stickers of a message by its ID
     async fn stickers(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedMessageSticker>, Error<Self::Error>>;
 
-    /// Get reactions of a message by its ID
+    /// Get cached reactions of a message by its ID
     async fn reactions(
         &self,
         message_id: Id<MessageMarker>,

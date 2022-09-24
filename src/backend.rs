@@ -163,19 +163,19 @@ pub trait Backend {
     /// This should be something like `DELETE FROM members WHERE guild_id = ?`
     async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached message in the cache
+    /// Add or replace a message in the cache
     async fn upsert_message(&self, message: CachedMessage) -> Result<(), Self::Error>;
 
-    /// Remove a cached message from the cache
+    /// Remove a message from the cache
     async fn delete_message(&self, message_id: Id<MessageMarker>) -> Result<(), Self::Error>;
 
-    /// Add a cached embed to the cache
+    /// Add an embed to the cache
     async fn upsert_embed(&self, embed: CachedEmbed) -> Result<(), Self::Error>;
 
-    /// Remove a cached embed from the cache
+    /// Remove an embed from the cache
     async fn delete_embed(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
-    /// Add a cached embed field to the cache
+    /// Add an embed field to the cache
     async fn upsert_embed_field(&self, embed_field: CachedEmbedField) -> Result<(), Self::Error>;
 
     /// Remove an embed's fields from the cache
@@ -184,7 +184,7 @@ pub trait Backend {
     /// ?`
     async fn delete_embed_fields(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
-    /// Get cached embeds of a message by its ID
+    /// Get embeds of a message by its ID
     ///
     /// This method is used internally in `super::cache::Cache::embeds`
     async fn cached_embeds(
@@ -200,7 +200,7 @@ pub trait Backend {
         embed_id: Id<GenericMarker>,
     ) -> Result<Vec<CachedEmbedField>, Self::Error>;
 
-    /// Add a cached attachment to the cache
+    /// Add an attachment to the cache
     async fn upsert_attachment(&self, attachment: CachedAttachment) -> Result<(), Self::Error>;
 
     /// Remove a message's attachments from the cache
@@ -212,7 +212,7 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached message sticker in the cache
+    /// Add or replace a message sticker in the cache
     async fn upsert_message_sticker(
         &self,
         sticker: CachedMessageSticker,
@@ -227,7 +227,7 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add or replace a cached presence in the cache
+    /// Add or replace a presence in the cache
     async fn upsert_presence(&self, presence: CachedPresence) -> Result<(), Self::Error>;
 
     /// Remove a presence from the cache
@@ -238,7 +238,7 @@ pub trait Backend {
     /// This should be something like `DELETE FROM presences WHERE guild_id = ?`
     async fn delete_guild_presences(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add a cached activity to the cache
+    /// Add an activity to the cache
     async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
 
     /// Remove a user's activities from the cache
@@ -246,10 +246,10 @@ pub trait Backend {
     /// This should be something like `DELETE FROM activities WHERE user_id = ?`
     async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 
-    /// Add a cached reaction to the cache
+    /// Add a reaction to the cache
     async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
 
-    /// Remove a cached reaction from the cache
+    /// Remove a reaction from the cache
     async fn delete_reaction(
         &self,
         message_id: Id<MessageMarker>,

@@ -3,7 +3,7 @@ pub use error::Error;
 use twilight_model::{
     channel::{Channel, ChannelType, StageInstance},
     gateway::event::Event,
-    guild::Emoji,
+    guild::Permissions,
     id::{
         marker::{
             ChannelMarker, EmojiMarker, GuildMarker, MessageMarker, RoleMarker, StageMarker,
@@ -13,6 +13,7 @@ use twilight_model::{
     },
     user::CurrentUser,
 };
+use twilight_util::permission_calculator::PermissionCalculator;
 
 use crate::{
     model::{
@@ -46,6 +47,9 @@ mod error {
         /// The DM channel doesn't have any recipients other than the bot itself
         #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
         PrivateChannelMissingRecipient(Box<Channel>),
+        /// The thread doesn't have a parent ID
+        #[error("The thread doesn't have a parent ID:\n{0:?}")]
+        ThreadMissingParent(Box<CachedChannel>),
         /// The current user isn't in the cache
         #[error("The current user isn't in the cache")]
         CurrentUserMissing,
@@ -55,19 +59,29 @@ mod error {
              Role ID: {role_id}"
         )]
         MemberRoleMissing {
+            /// The member's user ID
             user_id: Id<UserMarker>,
+            /// The missing role's ID
             role_id: Id<RoleMarker>,
         },
         /// The given channel to calculate permissions for isn't in the cache
         #[error("The given channel to calculate permissions for isn't in the cache:\n{0}")]
         PermissionsChannelMissing(Id<ChannelMarker>),
-        /// The given member or current member to calculate permissions for
-        /// isn't in the cache
+        /// The parent of the given thread to calculate permissions for isn't in
+        /// the cache
         #[error(
-            "The given member or current member to calculate permissions for isn't in the \
-             cache:\n{0:?}"
+            "The parent of the given thread to calculate permissions for isn't in the cache:\n{0}"
         )]
-        PermissionsMemberMissing((Id<GuildMarker>, Id<UserMarker>)),
+        PermissionsThreadParentMissing(Id<ChannelMarker>),
+        /// The guild to calculate permissions for isn't in the cache
+        #[error("The guild to calculate permissions for isn't in the cache:\n{0}")]
+        PermissionsGuildMissing(Id<GuildMarker>),
+        /// The everyone role in the guild to calculate permissions for isn't in
+        /// the cache
+        #[error(
+            "The everyone role in the guild to calculate permissions for isn't in the cache:\n{0}"
+        )]
+        PermissionsGuildEveryoneRoleMissing(Id<GuildMarker>),
         /// The given channel to calculate permissions for doesn't have a guild
         /// ID
         #[error("The given channel to calculate permissions for doesn't have a guild ID:\n{0:?}")]
@@ -205,7 +219,8 @@ pub trait Cache: Backend {
                     self.upsert_member(cached_member).await?;
                     self.delete_member_roles(member.guild_id, member.user.id)
                         .await?;
-                    self.add_member_roles(member.user.id, member.roles).await?;
+                    self.add_member_roles(member.user.id, member.roles.clone())
+                        .await?;
                 }
             }
             Event::MemberRemove(member) => {
@@ -345,6 +360,128 @@ pub trait Cache: Backend {
         Ok(())
     }
 
+    /// Get permissions of the current user in the given channel
+    ///
+    /// This is a convenience method for [`Self::channel_permissions`] with the
+    /// current user's ID
+    ///
+    /// # Errors
+    ///
+    /// Returns the error the backend might return
+    ///
+    /// Returns [`Error::PermissionsChannelMissing`],
+    /// [`Error::PermissionsChannelNotInGuild`],
+    /// [`Error::PermissionsGuildMissing`] or
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`]
+    async fn self_channel_permissions(
+        &self,
+        channel_id: Id<ChannelMarker>,
+    ) -> Result<Permissions, Error<Self::Error>> {
+        let current_user_id = self.current_user().await?.id;
+        self.channel_permissions(current_user_id, channel_id).await
+    }
+
+    /// Get permissions of the current user in the given guild
+    ///
+    /// This is a convenience method for [`Self::guild_permissions`] with the
+    /// current user's ID
+    ///
+    /// # Errors
+    ///
+    /// Returns the error the backend might return
+    ///
+    /// Returns [`Error::PermissionsGuildMissing`] or
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`]
+    async fn self_guild_permissions(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Permissions, Error<Self::Error>> {
+        let current_user_id = self.current_user().await?.id;
+        self.guild_permissions(current_user_id, guild_id).await
+    }
+
+    /// Get the permissions of the given user and channel
+    ///
+    /// # Errors
+    ///
+    /// Returns the error the backend might return
+    ///
+    /// Returns [`Error::PermissionsChannelMissing`],
+    /// [`Error::PermissionsChannelNotInGuild`],
+    /// [`Error::PermissionsGuildMissing`] or
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`]
+    async fn channel_permissions(
+        &self,
+        user_id: Id<UserMarker>,
+        channel_id: Id<ChannelMarker>,
+    ) -> Result<Permissions, Error<Self::Error>> {
+        let channel = self
+            .channel(channel_id)
+            .await?
+            .ok_or(Error::PermissionsChannelMissing(channel_id))?;
+        let guild_id = channel
+            .guild_id
+            .ok_or_else(|| Error::PermissionsChannelNotInGuild(Box::new(channel.clone())))?;
+        let guild = self
+            .guild(guild_id)
+            .await?
+            .ok_or(Error::PermissionsGuildMissing(guild_id))?;
+        let everyone_role = self
+            .role(guild_id.cast())
+            .await?
+            .ok_or(Error::PermissionsGuildEveryoneRoleMissing(guild_id))?;
+        let roles: Vec<_> = self
+            .member_roles(user_id, guild_id)
+            .await?
+            .iter()
+            .map(|role| (role.id, role.permissions))
+            .collect();
+
+        let calculator =
+            PermissionCalculator::new(guild_id, user_id, everyone_role.permissions, &roles)
+                .owner_id(guild.owner_id);
+
+        Ok(calculator.in_channel(
+            channel.kind,
+            &channel.permission_overwrites.unwrap_or_default(),
+        ))
+    }
+
+    /// Get the permissions of the given user and guild
+    ///
+    /// # Errors
+    ///
+    /// Returns the error the backend might return
+    ///
+    /// Returns [`Error::PermissionsGuildMissing`] or
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`]
+    async fn guild_permissions(
+        &self,
+        user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Permissions, Error<Self::Error>> {
+        let guild = self
+            .guild(guild_id)
+            .await?
+            .ok_or(Error::PermissionsGuildMissing(guild_id))?;
+        let everyone_role = self
+            .role(guild_id.cast())
+            .await?
+            .ok_or(Error::PermissionsGuildEveryoneRoleMissing(guild_id))?;
+        let roles: Vec<_> = self
+            .member_roles(user_id, guild_id)
+            .await?
+            .iter()
+            .map(|role| (role.id, role.permissions))
+            .collect();
+
+        let calculator =
+            PermissionCalculator::new(guild_id, user_id, everyone_role.permissions, &roles)
+                .owner_id(guild.owner_id);
+
+        Ok(calculator.root())
+    }
+
     /// Get the current user information of the bot
     ///
     /// # Errors
@@ -441,6 +578,13 @@ pub trait Cache: Backend {
     /// Get a cached role by its ID
     async fn role(&self, role_id: Id<RoleMarker>)
         -> Result<Option<CachedRole>, Error<Self::Error>>;
+
+    /// Get cached roles of a member by their ID
+    async fn member_roles(
+        &self,
+        user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedRole>, Error<Self::Error>>;
 
     /// Get a cached stage instance by its ID
     async fn stage_instance(

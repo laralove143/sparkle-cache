@@ -62,7 +62,8 @@
     clippy::wildcard_enum_match_arm,
     clippy::exhaustive_enums,
     clippy::self_named_module_files,
-    clippy::pub_use
+    clippy::pub_use,
+    clippy::else_if_without_else
 )]
 #![doc = include_str!("../README.md")]
 

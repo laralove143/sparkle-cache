@@ -87,6 +87,15 @@ pub trait Cache: Backend {
             Event::ChannelDelete(channel) => {
                 self.delete_channel(channel.id).await?;
             }
+            Event::ThreadCreate(thread) => {
+                self.add_channel(thread).await?;
+            }
+            Event::ThreadUpdate(thread) => {
+                self.add_channel(thread).await?;
+            }
+            Event::ThreadDelete(thread) => {
+                self.delete_channel(thread.id).await?;
+            }
             Event::GuildCreate(guild) => {
                 for channel in guild.channels.iter().chain(&guild.threads) {
                     self.add_channel(channel).await?;
@@ -287,12 +296,6 @@ pub trait Cache: Backend {
             Event::StageInstanceDelete(stage) => {
                 self.delete_stage_instance(stage.id).await?;
             }
-            // Event::ThreadCreate(_) => {}
-            // Event::ThreadDelete(_) => {}
-            // Event::ThreadListSync(_) => {}
-            // Event::ThreadMemberUpdate(_) => {}
-            // Event::ThreadMembersUpdate(_) => {}
-            // Event::ThreadUpdate(_) => {}
             // Event::TypingStart(_) => {}
             // Event::UnavailableGuild(_) => {}
             // Event::VoiceServerUpdate(_) => {}
@@ -312,7 +315,10 @@ pub trait Cache: Backend {
     /// is received
     async fn current_user(&self) -> Result<CurrentUser, Error<Self::Error>>;
 
-    /// Get a cached channel by its ID
+    /// Get a cached channel or thread by its ID
+    ///
+    /// The users that are joined in a thread aren't cached, as caching them is
+    /// likely unnecessary, if you need them, please create an issue
     async fn channel(
         &self,
         channel_id: Id<ChannelMarker>,

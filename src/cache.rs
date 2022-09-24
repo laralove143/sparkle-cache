@@ -131,7 +131,8 @@ pub trait Cache: Backend {
                     self.add_channel(channel).await?;
                 }
                 for emoji in &guild.emojis {
-                    self.add_emoji(emoji, guild.id).await?;
+                    self.upsert_emoji(CachedEmoji::from_emoji(emoji, guild.id))
+                        .await?;
                 }
                 for sticker in &guild.stickers {
                     self.upsert_sticker(sticker.into()).await?;
@@ -174,7 +175,8 @@ pub trait Cache: Backend {
             Event::GuildEmojisUpdate(emojis) => {
                 self.delete_guild_emojis(emojis.guild_id).await?;
                 for emoji in &emojis.emojis {
-                    self.add_emoji(emoji, emojis.guild_id).await?;
+                    self.upsert_emoji(CachedEmoji::from_emoji(emoji, emojis.guild_id))
+                        .await?;
                 }
             }
             Event::GuildStickersUpdate(stickers) => {
@@ -361,6 +363,9 @@ pub trait Cache: Backend {
     ) -> Result<Option<CachedChannel>, Error<Self::Error>>;
 
     /// Get a DM channel's ID by its recipient's ID
+    ///
+    /// Since DM channels can't be deleted consistently and efficiently, you
+    /// should make sure the bot shares a guild with the recipient
     async fn private_channel(
         &self,
         recipient_id: Id<UserMarker>,
@@ -459,27 +464,6 @@ pub trait Cache: Backend {
                 .await?;
         } else {
             self.upsert_channel(CachedChannel::from(channel)).await?;
-        }
-
-        Ok(())
-    }
-
-    /// Removes the channel from the cache
-    ///
-    /// # Errors
-    ///
-    /// Returns the error the backend might return
-    ///
-    /// When the channel is a DM channel, might return
-    /// [`cache::Error::PrivateChannelMissingRecipient`]
-    #[doc(hidden)]
-    async fn remove_channel(&self, channel: &Channel) -> Result<(), Error<Self::Error>> {
-        if channel.kind == ChannelType::Private {
-            let recipient_user_id = self.private_channel_recipient(channel).await?;
-            self.delete_private_channel(channel.id, recipient_user_id)
-                .await?;
-        } else {
-            self.delete_channel(channel.id).await?;
         }
 
         Ok(())

@@ -27,9 +27,15 @@ use crate::{
 #[allow(clippy::std_instead_of_core)]
 mod error {
     use thiserror::Error;
-    use twilight_model::channel::Channel;
+    use twilight_model::{
+        channel::Channel,
+        id::{
+            marker::{ChannelMarker, GuildMarker, RoleMarker, UserMarker},
+            Id,
+        },
+    };
 
-    use crate::backend;
+    use crate::{backend, model::CachedChannel};
 
     #[derive(Error, Debug)]
     /// The errors the cache might return
@@ -43,6 +49,29 @@ mod error {
         /// The current user isn't in the cache
         #[error("The current user isn't in the cache")]
         CurrentUserMissing,
+        /// One of the roles of the member to cache isn't in the cache
+        #[error(
+            "One of the roles of the member to cache isn't in the cache:\nUser ID: {user_id}, \
+             Role ID: {role_id}"
+        )]
+        MemberRoleMissing {
+            user_id: Id<UserMarker>,
+            role_id: Id<RoleMarker>,
+        },
+        /// The given channel to calculate permissions for isn't in the cache
+        #[error("The given channel to calculate permissions for isn't in the cache:\n{0}")]
+        PermissionsChannelMissing(Id<ChannelMarker>),
+        /// The given member or current member to calculate permissions for
+        /// isn't in the cache
+        #[error(
+            "The given member or current member to calculate permissions for isn't in the \
+             cache:\n{0:?}"
+        )]
+        PermissionsMemberMissing((Id<GuildMarker>, Id<UserMarker>)),
+        /// The given channel to calculate permissions for doesn't have a guild
+        /// ID
+        #[error("The given channel to calculate permissions for doesn't have a guild ID:\n{0:?}")]
+        PermissionsChannelNotInGuild(Box<CachedChannel>),
     }
 }
 
@@ -59,6 +88,7 @@ mod error {
 /// ```
 #[async_trait]
 pub trait Cache: Backend {
+    // noinspection DuplicatedCode
     /// Update the cache with the given event, should be called for every event
     /// to keep the cache valid
     ///
@@ -107,6 +137,8 @@ pub trait Cache: Backend {
                     self.upsert_sticker(sticker.into()).await?;
                 }
                 for member in &guild.members {
+                    self.add_member_roles(member.user.id, member.roles.clone())
+                        .await?;
                     self.upsert_member(member.into()).await?;
                 }
                 for presence in &guild.presences {
@@ -152,10 +184,14 @@ pub trait Cache: Backend {
                 }
             }
             Event::MemberAdd(member) => {
+                self.add_member_roles(member.user.id, member.roles.clone())
+                    .await?;
                 self.upsert_member(CachedMember::from(&member.0)).await?;
             }
             Event::MemberChunk(members) => {
                 for member in &members.members {
+                    self.add_member_roles(member.user.id, member.roles.clone())
+                        .await?;
                     self.upsert_member(member.into()).await?;
                 }
             }
@@ -165,10 +201,15 @@ pub trait Cache: Backend {
                 {
                     cached_member.update(member);
                     self.upsert_member(cached_member).await?;
+                    self.delete_member_roles(member.guild_id, member.user.id)
+                        .await?;
+                    self.add_member_roles(member.user.id, member.roles).await?;
                 }
             }
             Event::MemberRemove(member) => {
                 self.delete_member(member.user.id, member.guild_id).await?;
+                self.delete_member_roles(member.guild_id, member.user.id)
+                    .await?;
             }
             Event::MessageCreate(message) => {
                 for attachment in message.attachments.clone() {
@@ -393,10 +434,8 @@ pub trait Cache: Backend {
     ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
 
     /// Get a cached role by its ID
-    async fn role(
-        &self,
-        role_id: Id<RoleMarker>,
-    ) -> Result<Option<CachedReaction>, Error<Self::Error>>;
+    async fn role(&self, role_id: Id<RoleMarker>)
+        -> Result<Option<CachedRole>, Error<Self::Error>>;
 
     /// Get a cached stage instance by its ID
     async fn stage_instance(
@@ -467,15 +506,22 @@ pub trait Cache: Backend {
         Ok(recipient_user_id)
     }
 
-    /// Adds the emoji to the cache
+    /// Updates the cache with the member's roles
     #[doc(hidden)]
-    async fn add_emoji(
+    async fn add_member_roles(
         &self,
-        emoji: &Emoji,
-        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+        role_ids: Vec<Id<RoleMarker>>,
     ) -> Result<(), Error<Self::Error>> {
-        self.upsert_emoji(CachedEmoji::from_emoji(emoji, guild_id))
-            .await?;
+        for role_id in role_ids {
+            let mut role = self
+                .role(role_id)
+                .await?
+                .ok_or(Error::MemberRoleMissing { user_id, role_id })?;
+            role.user_id = Some(user_id);
+            self.upsert_role(role).await?;
+        }
+
         Ok(())
     }
 

@@ -36,6 +36,10 @@ impl<E: Error> From<E> for cache::Error<E> {
 /// This is for adding support for a backend, users of the cache itself only
 /// need the methods in [`super::cache::Cache`]
 ///
+/// All of the IDs are unique unless documented otherwise, this means if the ID
+/// is already in the cache, the new value's fields should overwrite the current
+/// fields, most backends abstract over this
+///
 /// # This trait is not complete
 ///
 /// You should expose the backend so that users can filter the results in the
@@ -103,18 +107,8 @@ pub trait Backend {
     /// This should be something like `DELETE FROM channels WHERE guild_id = ?`
     async fn delete_guild_channels(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add a DM channel to the cache
-    ///
-    /// This is different from a guild channel because it only has a channel ID
-    /// and recipient user ID fields
+    /// Add a DM channel to the cache, both of the IDs are unique
     async fn upsert_private_channel(
-        &self,
-        channel_id: Id<ChannelMarker>,
-        user_id: Id<UserMarker>,
-    ) -> Result<(), Self::Error>;
-
-    /// Remove a DM channel from the cache
-    async fn delete_private_channel(
         &self,
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
@@ -169,13 +163,13 @@ pub trait Backend {
     /// Remove a message from the cache
     async fn delete_message(&self, message_id: Id<MessageMarker>) -> Result<(), Self::Error>;
 
-    /// Add an embed to the cache
+    /// Add an embed to the cache, the embed ID is unique
     async fn upsert_embed(&self, embed: CachedEmbed) -> Result<(), Self::Error>;
 
     /// Remove an embed from the cache
     async fn delete_embed(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
-    /// Add an embed field to the cache
+    /// Add an embed field to the cache, the embed ID is not unique
     async fn upsert_embed_field(&self, embed_field: CachedEmbedField) -> Result<(), Self::Error>;
 
     /// Remove an embed's fields from the cache
@@ -200,7 +194,7 @@ pub trait Backend {
         embed_id: Id<GenericMarker>,
     ) -> Result<Vec<CachedEmbedField>, Self::Error>;
 
-    /// Add an attachment to the cache
+    /// Add an attachment to the cache, the message ID is not unique
     async fn upsert_attachment(&self, attachment: CachedAttachment) -> Result<(), Self::Error>;
 
     /// Remove a message's attachments from the cache
@@ -238,7 +232,7 @@ pub trait Backend {
     /// This should be something like `DELETE FROM presences WHERE guild_id = ?`
     async fn delete_guild_presences(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add an activity to the cache
+    /// Add an activity to the cache, none of the activity's IDs are unique
     async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
 
     /// Remove a user's activities from the cache
@@ -246,7 +240,8 @@ pub trait Backend {
     /// This should be something like `DELETE FROM activities WHERE user_id = ?`
     async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 
-    /// Add a reaction to the cache
+    /// Add a reaction to the cache, only the combination of message ID, user ID
+    /// and emoji is unique, they're not unique on their own
     async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
 
     /// Remove a reaction from the cache
@@ -276,7 +271,10 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add or replace a role in the cache
+    /// Add or update a role to the cache, only the combination of role ID and
+    /// user ID is unique, they're not unique on their own
+    ///
+    /// When updating roles, make sure the user IDs remain untouched
     async fn upsert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
 
     /// Remove a role from the cache
@@ -286,6 +284,16 @@ pub trait Backend {
     ///
     /// This should be something like `DELETE FROM roles WHERE guild_id = ?`
     async fn delete_guild_roles(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a member's roles from the cache
+    ///
+    /// This should be something like `DELETE FROM roles WHERE guild_id = ? AND
+    /// user_id = ?`
+    async fn delete_member_roles(
+        &self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> Result<(), Self::Error>;
 
     /// Add or replace a stage instance in the cache
     async fn upsert_stage_instance(&self, stage: StageInstance) -> Result<(), Self::Error>;

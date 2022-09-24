@@ -3,7 +3,7 @@ use twilight_model::{
     gateway::payload::incoming::MemberUpdate,
     guild::Member,
     id::{
-        marker::{GuildMarker, RoleMarker, UserMarker},
+        marker::{GuildMarker, UserMarker},
         Id,
     },
     user::{PremiumType, UserFlags},
@@ -20,6 +20,9 @@ use twilight_model::{
 /// - [`twilight_model::guild::member::Member.avatar`] is renamed to
 ///   [`Self.guild_avatar`]
 ///
+/// - [`twilight_model::guild::member::Member.roles`] is removed, as they're
+///   cached separately
+///
 /// - [`twilight_model::guild::member::Member.email`] and
 ///   [`twilight_model::guild::member::Member.verified`] are removed, as they're
 ///   only sent in some HTTP endpoints with the email `OAuth2`
@@ -34,7 +37,6 @@ pub struct CachedMember {
     pub nick: Option<String>,
     pub pending: bool,
     pub premium_since: Option<Timestamp>,
-    pub roles: Vec<Id<RoleMarker>>,
     pub accent_color: Option<u32>,
     pub avatar: Option<ImageHash>,
     pub banner: Option<ImageHash>,
@@ -83,7 +85,6 @@ impl CachedMember {
         self.nick.clone_from(&member.nick);
         self.pending = member.pending;
         self.premium_since = member.premium_since;
-        self.roles.clone_from(&member.roles);
         self.accent_color = member.user.accent_color;
         self.avatar = member.user.avatar;
         self.banner = member.user.banner;
@@ -111,7 +112,6 @@ impl From<&Member> for CachedMember {
             nick: member.nick.clone(),
             pending: member.pending,
             premium_since: member.premium_since,
-            roles: member.roles.clone(),
             accent_color: member.user.accent_color,
             system: member.user.system,
             avatar: member.avatar,

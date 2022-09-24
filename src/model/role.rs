@@ -1,7 +1,7 @@
 use twilight_model::{
     guild::{Permissions, Role, RoleTags},
     id::{
-        marker::{GuildMarker, RoleMarker},
+        marker::{GuildMarker, RoleMarker, UserMarker},
         Id,
     },
     util::ImageHash,
@@ -12,9 +12,13 @@ use twilight_model::{
 ///
 /// - [`Self.guild_id`] field is added, making it possible to return a guild's
 ///   roles
+///
+/// - [`Self.user_id`] field is added, making it possible to return a member's
+///   roles
 #[derive(Clone, Debug)]
 pub struct CachedRole {
     pub guild_id: Id<GuildMarker>,
+    pub user_id: Option<Id<UserMarker>>,
     pub color: u32,
     pub hoist: bool,
     pub icon: Option<ImageHash>,
@@ -35,6 +39,7 @@ impl CachedRole {
     pub fn from_role(role: Role, guild_id: Id<GuildMarker>) -> Self {
         Self {
             guild_id,
+            user_id: None,
             color: role.color,
             hoist: role.hoist,
             icon: role.icon,

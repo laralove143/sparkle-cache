@@ -253,8 +253,12 @@ pub trait Cache: Backend {
             Event::ReactionRemoveAll(reaction) => {
                 self.delete_message_reactions(reaction.message_id).await?;
             }
-            // Event::Ready(_) => {}
-            // Event::Resumed => {}
+            Event::Ready(ready) => {
+                self.set_current_user(ready.user.clone()).await?;
+            }
+            Event::UserUpdate(user) => {
+                self.set_current_user(user.0.clone()).await?;
+            }
             // Event::RoleCreate(_) => {}
             // Event::RoleDelete(_) => {}
             // Event::RoleUpdate(_) => {}
@@ -276,7 +280,6 @@ pub trait Cache: Backend {
             // Event::ThreadUpdate(_) => {}
             // Event::TypingStart(_) => {}
             // Event::UnavailableGuild(_) => {}
-            // Event::UserUpdate(_) => {}
             // Event::VoiceServerUpdate(_) => {}
             // Event::VoiceStateUpdate(_) => {}
             // Event::WebhooksUpdate(_) => {}

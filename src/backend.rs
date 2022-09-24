@@ -89,7 +89,7 @@ pub trait Backend {
     /// The error type the backend returns, for example `Error(sqlx::Error)`
     type Error: Error;
 
-    /// Set the current user information of the bot
+    /// Set or replace the current user information of the bot
     async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Self::Error>;
 
     /// Add or replace a channel in the cache

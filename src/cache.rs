@@ -296,11 +296,6 @@ pub trait Cache: Backend {
             Event::StageInstanceDelete(stage) => {
                 self.delete_stage_instance(stage.id).await?;
             }
-            // Event::TypingStart(_) => {}
-            // Event::UnavailableGuild(_) => {}
-            // Event::VoiceServerUpdate(_) => {}
-            // Event::VoiceStateUpdate(_) => {}
-            // Event::WebhooksUpdate(_) => {}
             _ => {}
         }
 

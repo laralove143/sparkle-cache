@@ -11,11 +11,12 @@ The cache itself doesn't have access to the Discord API methods, it's on the to-
 
 This means these data can't be cached for now:
 
-- Guild bans
+- Bans
 - Auto moderation rules
-- Guild integrations
-- Guild scheduled events
-- Guild invites
+- Integrations
+- Scheduled events
+- Invites
+- Webhooks
 - Missing data that you can create a PR to add to this list
 
 ## Support for libraries other than Twilight

@@ -27,3 +27,10 @@ This means these data can't be cached for now:
 ## Support for libraries other than Twilight
 
 This doesn't depend tightly on Twilight, you can easily fork this and change the Twilight models used in it
+
+## Your help is needed
+
+Any feedback or bug reports will be very useful in further development, the code is in a working state with all
+essential methods done but there's many possible additions that will be added as you request them!
+
+It also can't be tested yet since there's no library that implements the given traits

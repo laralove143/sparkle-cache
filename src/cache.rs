@@ -36,7 +36,10 @@ mod error {
         },
     };
 
-    use crate::{backend, model::CachedChannel};
+    use crate::{
+        backend,
+        model::{CachedChannel, CachedMember},
+    };
 
     #[derive(Error, Debug)]
     /// The errors the cache might return
@@ -64,18 +67,29 @@ mod error {
             /// The missing role's ID
             role_id: Id<RoleMarker>,
         },
-        /// The given channel to calculate permissions for isn't in the cache
-        #[error("The given channel to calculate permissions for isn't in the cache:\n{0}")]
-        PermissionsChannelMissing(Id<ChannelMarker>),
-        /// The parent of the given thread to calculate permissions for isn't in
-        /// the cache
+        /// The member's communication disabled until timestamp isn't valid
         #[error(
-            "The parent of the given thread to calculate permissions for isn't in the cache:\n{0}"
+            "The communication disabled until timestamp of the given member to calculate \
+             permissions for isn't valid:\n{0:?}"
         )]
-        PermissionsThreadParentMissing(Id<ChannelMarker>),
+        MemberBadTimeoutTimestamp(Box<CachedMember>),
+        /// The channel to calculate permissions for isn't in the cache
+        #[error("The channel to calculate permissions for isn't in the cache:\n{0}")]
+        PermissionsChannelMissing(Id<ChannelMarker>),
         /// The guild to calculate permissions for isn't in the cache
         #[error("The guild to calculate permissions for isn't in the cache:\n{0}")]
         PermissionsGuildMissing(Id<GuildMarker>),
+        /// The member to calculate permissions for isn't in the cache
+        #[error(
+            "The member to calculate permissions for isn't in the cache:\nUser ID: {user_id}, \
+             Guild ID: {guild_id}"
+        )]
+        PermissionsMemberMissing {
+            /// The member's user ID
+            user_id: Id<UserMarker>,
+            /// The guild's ID
+            guild_id: Id<GuildMarker>,
+        },
         /// The everyone role in the guild to calculate permissions for isn't in
         /// the cache
         #[error(
@@ -397,7 +411,7 @@ pub trait Cache: Backend {
         guild_id: Id<GuildMarker>,
     ) -> Result<Permissions, Error<Self::Error>> {
         let current_user_id = self.current_user().await?.id;
-        self.guild_permissions(current_user_id, guild_id).await
+        self.guild_permissions(guild_id, current_user_id).await
     }
 
     /// Get the permissions of the given user and channel
@@ -408,8 +422,10 @@ pub trait Cache: Backend {
     ///
     /// Returns [`Error::PermissionsChannelMissing`],
     /// [`Error::PermissionsChannelNotInGuild`],
-    /// [`Error::PermissionsGuildMissing`] or
-    /// [`Error::PermissionsGuildEveryoneRoleMissing`]
+    /// [`Error::PermissionsGuildMissing`],
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`],
+    /// [`Error::PermissionsMemberMissing`] or
+    /// [`Error::MemberBadTimeoutTimestamp`]
     async fn channel_permissions(
         &self,
         user_id: Id<UserMarker>,
@@ -422,29 +438,7 @@ pub trait Cache: Backend {
         let guild_id = channel
             .guild_id
             .ok_or_else(|| Error::PermissionsChannelNotInGuild(Box::new(channel.clone())))?;
-        let guild = self
-            .guild(guild_id)
-            .await?
-            .ok_or(Error::PermissionsGuildMissing(guild_id))?;
-        let everyone_role = self
-            .role(guild_id.cast())
-            .await?
-            .ok_or(Error::PermissionsGuildEveryoneRoleMissing(guild_id))?;
-        let roles: Vec<_> = self
-            .member_roles(user_id, guild_id)
-            .await?
-            .iter()
-            .map(|role| (role.id, role.permissions))
-            .collect();
-
-        let calculator =
-            PermissionCalculator::new(guild_id, user_id, everyone_role.permissions, &roles)
-                .owner_id(guild.owner_id);
-
-        Ok(calculator.in_channel(
-            channel.kind,
-            &channel.permission_overwrites.unwrap_or_default(),
-        ))
+        self.permissions(guild_id, user_id, Some(channel)).await
     }
 
     /// Get the permissions of the given user and guild
@@ -453,12 +447,34 @@ pub trait Cache: Backend {
     ///
     /// Returns the error the backend might return
     ///
-    /// Returns [`Error::PermissionsGuildMissing`] or
-    /// [`Error::PermissionsGuildEveryoneRoleMissing`]
+    /// Returns [`Error::PermissionsGuildMissing`],
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`],
+    /// [`Error::PermissionsMemberMissing`] or
+    /// [`Error::MemberBadTimeoutTimestamp`]
     async fn guild_permissions(
         &self,
-        user_id: Id<UserMarker>,
         guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> Result<Permissions, Error<Self::Error>> {
+        self.permissions(guild_id, user_id, None).await
+    }
+
+    /// Get the permissions with the given parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns the error the backend might return
+    ///
+    /// Returns [`Error::PermissionsGuildMissing`],
+    /// [`Error::PermissionsGuildEveryoneRoleMissing`],
+    /// [`Error::PermissionsMemberMissing`] or
+    /// [`Error::MemberBadTimeoutTimestamp`]
+    #[doc(hidden)]
+    async fn permissions(
+        &self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+        cached_channel: Option<CachedChannel>,
     ) -> Result<Permissions, Error<Self::Error>> {
         let guild = self
             .guild(guild_id)
@@ -478,8 +494,29 @@ pub trait Cache: Backend {
         let calculator =
             PermissionCalculator::new(guild_id, user_id, everyone_role.permissions, &roles)
                 .owner_id(guild.owner_id);
+        let permissions = if let Some(channel) = cached_channel {
+            calculator.in_channel(
+                channel.kind,
+                &channel.permission_overwrites.unwrap_or_default(),
+            )
+        } else {
+            calculator.root()
+        };
 
-        Ok(calculator.root())
+        let member = self
+            .member(guild_id, user_id)
+            .await?
+            .ok_or(Error::PermissionsMemberMissing { user_id, guild_id })?;
+        if !permissions.contains(Permissions::ADMINISTRATOR)
+            && member
+                .communication_disabled()
+                .map_err(|_err| Error::MemberBadTimeoutTimestamp(Box::new(member)))?
+        {
+            Ok(permissions
+                .intersection(Permissions::VIEW_CHANNEL | Permissions::READ_MESSAGE_HISTORY))
+        } else {
+            Ok(permissions)
+        }
     }
 
     /// Get the current user information of the bot

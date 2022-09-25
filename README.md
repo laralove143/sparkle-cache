@@ -12,7 +12,8 @@ out of the box
 
 ## Incompleteness
 
-The cache itself doesn't have access to the Discord API methods, it's on the to-do list to add support for data that requires API methods.
+The cache itself doesn't have access to the Discord API methods, it's on the to-do list to add support for data that
+requires API methods.
 
 This means these data can't be cached for now:
 

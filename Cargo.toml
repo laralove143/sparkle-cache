@@ -1,10 +1,10 @@
 [package]
-name = "twilight-cache"
+name = "twilight-cache-any-backend"
 version = "0.13.0"
 authors = ["lara <laralove143@icloud.com>"]
 edition = "2021"
 description = "A backend-agnostic Discord cache implementation for the Twilight ecosystem."
-repository = "https://github.com/laralove143/twilight-cache/"
+repository = "https://github.com/laralove143/twilight-cache-any-backend/"
 license = "ISC"
 keywords = ["discord", "discord-api", "twilight"]
 categories = ["api-bindings", "asynchronous", "caching"]

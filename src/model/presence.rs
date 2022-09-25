@@ -6,24 +6,19 @@ use twilight_model::{
     },
 };
 
-/// A cached activity, it is the same as
-/// [`twilight_model::gateway::presence::Activity`] except:
+/// A cached activity
 ///
-/// - [`Self.user_id`] field is added, making it possible to return a user's
-///   activities
+/// It is the same as [`twilight_model::gateway::presence::Activity`] except:
 ///
-/// - [`twilight_model::gateway::presence::Presence.buttons`] is removed, as
-///   caching it is likely unnecessary, if you need this field, please create an
-///   issue
+/// - `user_id` field is added, making it possible to return a user's activities
 ///
-/// - [`twilight_model::gateway::presence::Activity.assets`],
-///   [`twilight_model::gateway::presence::Activity.emoji`],
-///   [`twilight_model::gateway::presence::Activity.party`] and
-///   [`twilight_model::gateway::presence::Activity.party`] are changed their
-///   fields being flattened, making it easier to cache
+/// - `buttons` field is removed, as caching it is likely unnecessary, if you
+///   need this field, please create an issue
 ///
-/// - [`twilight_model::gateway::presence::Activity.secrets`] is removed, as
-///   it's not sent to bots
+/// - `assets`, `emoji`, `party` and `party` fields are flattened, making this
+///   struct easier to cache
+///
+/// - `secrets` field is removed, as it's not sent to bots
 #[derive(Clone, Debug)]
 pub struct CachedActivity {
     pub user_id: Id<UserMarker>,
@@ -99,18 +94,16 @@ impl CachedActivity {
     }
 }
 
-/// A cached presence, it is the same as
-/// [`twilight_model::gateway::presence::Presence`] except:
+/// A cached presence
 ///
-/// - [`twilight_model::gateway::presence::Presence.user`] is changed to a user
-///   ID, which is cached separately
+/// It's the same as [`twilight_model::gateway::presence::Presence`] except:
 ///
-/// - [`twilight_model::gateway::presence::Presence.client_status`] is removed,
-///   as caching it is likely unnecessary, if you need this field, please create
-///   an issue
+/// - `user` field is changed to a user ID, since users are cached separately
 ///
-/// - [`twilight_model::gateway::presence::Presence.activities`] is removed,
-///   since it's cached separately
+/// - `client_status` field is removed, as caching it is likely unnecessary, if
+///   you need this field, please create an issue
+///
+/// - `activities` field is removed, since they're cached separately
 #[derive(Clone, Copy, Debug)]
 pub struct CachedPresence {
     pub guild_id: Id<GuildMarker>,

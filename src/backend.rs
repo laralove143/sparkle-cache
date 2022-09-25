@@ -22,7 +22,7 @@ use crate::{
     },
 };
 
-/// Implemented on backend errors, for example `Error(sqlx::Error)`
+/// Implemented on backend errors, for example `sqlx::Error`
 pub trait Error: Display + Send {}
 
 impl<E: Error> From<E> for cache::Error<E> {
@@ -34,7 +34,7 @@ impl<E: Error> From<E> for cache::Error<E> {
 /// Provides methods to add or replace data in the cache
 ///
 /// This is for adding support for a backend, users of the cache itself only
-/// need the methods in [`super::cache::Cache`]
+/// need the methods in [`super::Cache`]
 ///
 /// All of the IDs are unique unless documented otherwise, this means if the ID
 /// is already in the cache, the new value's fields should overwrite the current
@@ -62,35 +62,40 @@ impl<E: Error> From<E> for cache::Error<E> {
 ///     marker::{GuildMarker, UserMarker},
 ///     Id,
 /// };
+///
 /// struct MyCache {
 ///     pub db: sql_library::Database, // Or add a getter method instead of making the field public
 /// };
+///
 /// impl MyCache {
 ///     fn new() {
 ///         let db = sql_library::Database::connect("postgresql://localhost/discord");
-///         db.query("CREATE INDEX bans_guild_id_index ON bans (guild_id);");
-///         db.query("CREATE INDEX bans_user_id_index ON bans (user_id);");
+///         db.query("CREATE UNIQUE INDEX channels_idx ON channels (channel_id);");
+///         db.query("CREATE INDEX channels_guild_id_idx ON channels (guild_id);");
 ///     }
 /// }
+///
 /// impl Backend for MyCache {
-///     async fn add_ban(
-///         &self,
-///         guild_id: Id<GuildMarker>,
-///         user_id: Id<UserMarker>,
-///     ) -> Result<(), Self::Error> {
-///         self.db
-///             .query("INSERT INTO bans (guild_id, user_id) VALUES ($guild_id, $user_id)");
+///     type Error = sqlx::Error;
+///
+///     async fn upsert_channel(&self, channel: CachedChannel) -> Result<(), Self::Error> {
+///         sqlx::query!(
+///             channel.id,
+///             // Other fields here
+///             "INSERT INTO channels (id, ...) VALUES ($1, ...)"
+///         ).exec(&self.db)?;
 ///         Ok(())
 ///     }
 ///     // Implement other methods similarly
 /// }
+///
 /// impl Cache for MyCache {
 ///     // Implement the methods here, usually using getter queries
 /// }
 /// ```
 #[async_trait]
 pub trait Backend {
-    /// The error type the backend returns, for example `Error(sqlx::Error)`
+    /// The error type the backend returns, for example `sqlx::Error`
     type Error: Error;
 
     /// Set or replace the current user information of the bot
@@ -180,7 +185,7 @@ pub trait Backend {
 
     /// Get embeds of a message by its ID
     ///
-    /// This method is used internally in `super::cache::Cache::embeds`
+    /// This method is used internally in [`super::Cache::embeds`]
     async fn cached_embeds(
         &self,
         message_id: Id<MessageMarker>,
@@ -188,7 +193,7 @@ pub trait Backend {
 
     /// Get fields of an embed by its ID
     ///
-    /// This method is used internally in `super::cache::Cache::embeds`
+    /// This method is used internally in [`super::Cache::embeds`]
     async fn embed_fields(
         &self,
         embed_id: Id<GenericMarker>,

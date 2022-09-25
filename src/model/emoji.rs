@@ -6,14 +6,14 @@ use twilight_model::{
     },
 };
 
-/// A cached emoji, it is the same as [`twilight_model::guild::Emoji`]
+/// A cached emoji
+///
+/// It's the same as [`twilight_model::guild::Emoji`]
 /// except:
 ///
-/// - [`Self.guild_id`] field is added, making it possible to return a guild's
-///   emojis
+/// - `guild_id` field is added, making it possible to return a guild's emojis
 ///
-/// - [`twilight_model::guild::Emoji.user`] is changed to a user ID, which is
-///   cached separately
+/// - `user` field is changed to a user ID, as users are cached separately
 #[derive(Clone, Debug)]
 pub struct CachedEmoji {
     pub guild_id: Id<GuildMarker>,

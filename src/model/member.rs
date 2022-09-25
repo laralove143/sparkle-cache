@@ -10,22 +10,18 @@ use twilight_model::{
     util::{ImageHash, Timestamp},
 };
 
-/// A cached sticker, it is the same as
-/// [`twilight_model::guild::member::Member`] except:
+/// A cached member
 ///
-/// - [`twilight_model::guild::member::Member.user`] is changed its fields being
-///   flattened since member users are rarely duplicates, making it easier to
+/// It's the same as [`twilight_model::guild::member::Member`] except:
+///
+/// - `user` field is flattened and `avatar` field is renamed to `guild_avatar`
+///   since member users are rarely duplicates, making this struct easier to
 ///   cache
 ///
-/// - [`twilight_model::guild::member::Member.avatar`] is renamed to
-///   [`Self.guild_avatar`]
+/// - `roles` field is removed, as member roles are cached separately
 ///
-/// - [`twilight_model::guild::member::Member.roles`] is removed, as they're
-///   cached separately
-///
-/// - [`twilight_model::guild::member::Member.email`] and
-///   [`twilight_model::guild::member::Member.verified`] are removed, as they're
-///   only sent in some HTTP endpoints with the email `OAuth2`
+/// - `email` and `verified` fields are removed, as they're only sent in some
+///   HTTP endpoints
 #[derive(Clone, Debug)]
 pub struct CachedMember {
     pub guild_avatar: Option<ImageHash>,

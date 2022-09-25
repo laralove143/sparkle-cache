@@ -6,11 +6,11 @@ use twilight_model::{
     },
 };
 
-/// A cached reaction, it is the same as
-/// [`twilight_model::channel::Reaction`] except:
+/// A cached reaction
 ///
-/// - [`twilight_model::channel::Reaction.member`] is removed as they're cached
-///   separately
+/// It's the same as [`twilight_model::channel::Reaction`] except:
+///
+/// - `member` field is removed, as members are cached separately
 #[derive(Clone, Debug)]
 pub struct CachedReaction {
     pub channel_id: Id<ChannelMarker>,

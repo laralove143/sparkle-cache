@@ -9,11 +9,12 @@ use twilight_model::{
     },
 };
 
-/// A cached sticker, it is the same as
-/// [`twilight_model::channel::message::sticker::Sticker`] except:
+/// A cached sticker
 ///
-/// - [`twilight_model::channel::message::sticker::Sticker.user`] is changed to
-///   a user ID which is cached separately
+/// It's the same as [`twilight_model::channel::message::sticker::Sticker`]
+/// except:
+///
+/// - `user` field is changed to a user ID, since users are cached separately
 #[derive(Clone, Debug)]
 pub struct CachedSticker {
     pub available: bool,

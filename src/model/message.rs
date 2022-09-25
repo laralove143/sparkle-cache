@@ -20,11 +20,11 @@ use twilight_model::{
 
 use crate::unique_id;
 
-/// A cached embed field, it is the same as
-/// [`twilight_model::channel::embed::EmbedField`] except:
+/// A cached embed field
 ///
-/// - [`Self.embed_id`] field is added, making it possible to return an embed's
-///   fields
+/// It's the same as [`twilight_model::channel::embed::EmbedField`] except:
+///
+/// - `embed_id` field is added, making it possible to return an embed's fields
 #[derive(Clone, Debug)]
 pub struct CachedEmbedField {
     pub embed_id: Id<GenericMarker>,
@@ -47,22 +47,18 @@ impl CachedEmbedField {
     }
 }
 
-/// A cached embed, it is the same as
-/// [`twilight_model::channel::embed::Embed`] except:
+/// A cached embed
 ///
-/// - [`twilight_model::channel::embed::Embed.fields`] is removed and
-///   [`Self.id`] field is added, making it possible to return an embed's fields
+/// It's the same as [`twilight_model::channel::embed::Embed`] except:
 ///
-/// - [`Self.message_id`] field is added, making it possible to return a
-///   message's embeds
+/// - `fields` field is removed and `id` field is added, making it possible to
+///   return an embed's fields
 ///
-/// - [`twilight_model::channel::embed::Embed.author`],
-///   [`twilight_model::channel::embed::Embed.footer`],
-///   [`twilight_model::channel::embed::Embed.image`],
-///   [`twilight_model::channel::embed::Embed.provider`],
-///   [`twilight_model::channel::embed::Embed.thumbnail`] and
-///   [`twilight_model::channel::embed::Embed.video`] are changed their fields
-///   being flattened, making it easier to cache
+/// - `message_id` field is added, making it possible to return a message's
+///   embeds
+///
+/// - `author`, `footer`, `image`, `provider`, `thumbnail` and `video` fields
+///   are flattened, making this struct easier to cache
 #[derive(Clone, Debug)]
 pub struct CachedEmbed {
     pub id: Id<GenericMarker>,
@@ -171,11 +167,12 @@ impl CachedEmbed {
     }
 }
 
-/// A cached attachment, it is the same as
-/// [`twilight_model::channel::Attachment`] except:
+/// A cached attachment
 ///
-/// - [`Self.message_id`] field is added, making it possible to return a
-///   message's attachments
+/// It's the same as [`twilight_model::channel::Attachment`] except:
+///
+/// - `message_id` field is added, making it possible to return a message's
+///   attachments
 #[derive(Clone, Debug)]
 pub struct CachedAttachment {
     pub message_id: Id<MessageMarker>,
@@ -212,11 +209,13 @@ impl CachedAttachment {
     }
 }
 
-/// A cached reaction, it is the same as
+/// A cached message sticker
+///
+/// It's the same as
 /// [`twilight_model::channel::message::sticker::MessageSticker`] except:
 ///
-/// - [`Self.message_id`] field is added, making it possible to return a
-///   message's stickers
+/// - `message_id` field is added, making it possible to return a message's
+///   stickers
 #[derive(Clone, Debug)]
 pub struct CachedMessageSticker {
     pub message_id: Id<MessageMarker>,
@@ -239,32 +238,22 @@ impl CachedMessageSticker {
     }
 }
 
-/// A cached message, it is the same as
-/// [`twilight_model::channel::message::Message`] except:
+/// A cached message
 ///
-/// - [`twilight_model::channel::message::Message.activity`] and
-///   [`twilight_model::channel::message::Message.reference`] are changed their
-///   fields being flattened, making it easier to cache
+/// It's the same as [`twilight_model::channel::message::Message`] except:
 ///
-/// - [`twilight_model::channel::message::Message.author`],
-///   [`twilight_model::channel::message::Message.referenced_message`] and
-///   [`twilight_model::channel::message::Message.thread`] are changed to their
-///   IDs, which are cached separately
+/// - `activity` and `reference` fields are  flattened, making this struct
+///   easier to cache
 ///
-/// - [`twilight_model::channel::message::Message.components`],
-///   [`twilight_model::channel::message::Message.interaction`],
-///   [`twilight_model::channel::message::Message.mention_channels`],
-///   [`twilight_model::channel::message::Message.mention_roles`] and
-///   [`twilight_model::channel::message::Message.mentions`] are removed, as
-///   caching them is likely unnecessary, if you need these fields, please
-///   create an issue
+/// - `author`, `referenced_message` and `thread` fields are changed to their
+///   IDs, since they're cached separately
 ///
-/// - [`twilight_model::channel::message::Message.member`],
-///   [`twilight_model::channel::message::Message.reactions`],
-///   [`twilight_model::channel::message::Message.attachments`],
-///   [`twilight_model::channel::message::Message.embeds`] and
-///   [`twilight_model::channel::message::Message.sticker_items`] are removed,
-///   since they are cached separately
+/// - `components`, `interaction`, `mention_channels`, `mention_roles` and
+///   `mentions` fields are removed, as caching them is likely unnecessary, if
+///   you need these fields, please create an issue
+///
+/// - `member`, `reactions`, `attachments`, `embeds` and `sticker_items` fields
+///   are removed, since they are cached separately
 #[derive(Clone, Debug)]
 pub struct CachedMessage {
     pub activity_type: Option<MessageActivityType>,

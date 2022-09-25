@@ -7,14 +7,13 @@ use twilight_model::{
     util::ImageHash,
 };
 
-/// A cached emoji, it is the same as [`twilight_model::guild::Role`]
-/// except:
+/// A cached emoji
 ///
-/// - [`Self.guild_id`] field is added, making it possible to return a guild's
-///   roles
+/// It's the same as [`twilight_model::guild::Role`] except:
 ///
-/// - [`Self.user_id`] field is added, making it possible to return a member's
-///   roles
+/// - `guild_id` field is added, making it possible to return a guild's roles
+///
+/// - `user_id` field is added, making it possible to return a member's roles
 #[derive(Clone, Debug)]
 pub struct CachedRole {
     pub guild_id: Id<GuildMarker>,

@@ -10,25 +10,22 @@ use twilight_model::{
     util::{ImageHash, Timestamp},
 };
 
-/// A cached guild, it is the same as [`twilight_model::guild::Guild`]
-/// except:
+/// A cached guild
 ///
-/// - [`twilight_model::Guild.channels`], [`twilight_model::Guild.threads`],
-///   [`twilight_model::Guild.members`], [`twilight_model::Guild.roles`],
-///   [`twilight_model::Guild.emojis`], [`twilight_model::Guild.stickers`],
-///   [`twilight_model::Guild.presences`] and
-///   [`twilight_model::Guild.stage_instances`] are removed, as they're cached
+/// It's the same as [`twilight_model::guild::Guild`] except:
+///
+/// - `channels`, `threads`, `members`, `roles`, `emojis`, `stickers`,
+///   `presences` and `stage_instances` fields are removed, as they're cached
 ///   separately
 ///
-/// - [`twilight_model::Guild.member_count`] is removed, as keeping it
-///   up-to-date would add unnecessary caching overhead
+/// - `member_count` field is removed, as keeping it up-to-date would add
+///   unnecessary caching overhead
 ///
-/// - [`twilight_model::guild::Guild.approximate_member_count`] and
-///   [`twilight_model::guild::Guild.approximate_presence_count`] are removed,
-///   as they're only sent in some HTTP endpoints
+/// - `approximate_member_count` and `approximate_presence_count` fields are
+///   removed, as they're only sent in some HTTP endpoints
 ///
-/// - [`twilight_model::Guild.voice_states`] is removed, as voice-related
-///   caching is not handled by this library
+/// - `voice_states` field is removed, as voice-related caching is not handled
+///   by this library
 #[derive(Clone, Debug)]
 pub struct CachedGuild {
     pub afk_channel_id: Option<Id<ChannelMarker>>,

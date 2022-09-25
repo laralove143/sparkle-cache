@@ -11,21 +11,19 @@ use twilight_model::{
     util::ImageHash,
 };
 
-/// A cached channel, it is the same as [`twilight_model::channel::Channel`]
-/// except:
+/// A cached channel
 ///
-/// - [`twilight_model::channel::Channel.recipients`] is removed, as it's only
-///   sent in DM channels, which are cached separately
+/// It's the same as [`twilight_model::channel::Channel`] except:
 ///
-/// - [`twilight_model::channel::Channel.last_message_id`],
-///   [`twilight_model::channel::Channel.last_pin_timestamp`],
-///   [`twilight_model::channel::Channel.member_count`] and
-///   [`twilight_model::channel::Channel.message_count`] are removed, as keeping
-///   them up-to-date would add unnecessary caching overhead
+/// - `recipients` field is removed, as it's only sent in DM channels, which are
+///   cached separately
 ///
-/// - [`twilight_model::channel::Channel.member`] and
-///   [`twilight_model::channel::Channel.newly_created`] are removed, as they're
-///   only sent in some HTTP endpoints
+/// - `last_message_id`, `last_pin_timestamp`, `member_count` and
+///   `message_count` fields are removed, as keeping them up-to-date would add
+///   unnecessary caching overhead
+///
+/// - `member` and `newly_created` fields are removed, as they're only sent in
+///   some HTTP endpoints
 #[derive(Clone, Debug)]
 pub struct CachedChannel {
     pub application_id: Option<Id<ApplicationMarker>>,

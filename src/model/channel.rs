@@ -1,7 +1,7 @@
 use twilight_model::{
     channel::{
         permission_overwrite::{PermissionOverwrite, PermissionOverwriteType},
-        thread::{AutoArchiveDuration, ThreadMetadata},
+        thread::AutoArchiveDuration,
         Channel, ChannelType, VideoQualityMode,
     },
     guild::Permissions,
@@ -9,7 +9,7 @@ use twilight_model::{
         marker::{ApplicationMarker, ChannelMarker, GenericMarker, GuildMarker, UserMarker},
         Id,
     },
-    util::ImageHash,
+    util::{ImageHash, Timestamp},
 };
 
 /// A cached permission overwrite
@@ -62,6 +62,8 @@ impl CachedPermissionOverwrite {
 ///
 /// - `member` and `newly_created` fields are removed, as they're only sent in
 ///   some HTTP endpoints
+///
+/// - `thread_metadata` field is flattened, making this struct easier to cache
 #[derive(Clone, Debug)]
 pub struct CachedChannel {
     pub application_id: Option<Id<ApplicationMarker>>,
@@ -79,7 +81,12 @@ pub struct CachedChannel {
     pub position: Option<i32>,
     pub rate_limit_per_user: Option<u16>,
     pub rtc_region: Option<String>,
-    pub thread_metadata: Option<ThreadMetadata>,
+    pub thread_archived: Option<bool>,
+    pub thread_auto_archive_duration: Option<AutoArchiveDuration>,
+    pub thread_archive_timestamp: Option<Timestamp>,
+    pub thread_create_timestamp: Option<Timestamp>,
+    pub thread_invitable: Option<bool>,
+    pub thread_locked: Option<bool>,
     pub topic: Option<String>,
     pub user_limit: Option<u32>,
     pub video_quality_mode: Option<VideoQualityMode>,
@@ -103,10 +110,30 @@ impl From<&Channel> for CachedChannel {
             position: channel.position,
             rate_limit_per_user: channel.rate_limit_per_user,
             rtc_region: channel.rtc_region.clone(),
-            thread_metadata: channel.thread_metadata.clone(),
+            thread_archived: channel
+                .thread_metadata
+                .as_ref()
+                .map(|thread| thread.archived),
+            thread_auto_archive_duration: channel
+                .thread_metadata
+                .as_ref()
+                .map(|thread| thread.auto_archive_duration),
+            thread_archive_timestamp: channel
+                .thread_metadata
+                .as_ref()
+                .map(|thread| thread.archive_timestamp),
+            thread_create_timestamp: channel
+                .thread_metadata
+                .as_ref()
+                .and_then(|thread| thread.create_timestamp),
+            thread_invitable: channel
+                .thread_metadata
+                .as_ref()
+                .and_then(|thread| thread.invitable),
             topic: channel.topic.clone(),
             user_limit: channel.user_limit,
             video_quality_mode: channel.video_quality_mode,
+            thread_locked: None,
         }
     }
 }

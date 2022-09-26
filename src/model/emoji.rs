@@ -1,7 +1,7 @@
 use twilight_model::{
     guild::Emoji,
     id::{
-        marker::{EmojiMarker, GuildMarker, RoleMarker, UserMarker},
+        marker::{EmojiMarker, GuildMarker, UserMarker},
         Id,
     },
 };

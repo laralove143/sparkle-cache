@@ -41,8 +41,8 @@ mod error {
         model::{CachedChannel, CachedMember},
     };
 
-    #[derive(Error, Debug)]
     /// The errors the cache might return
+    #[derive(Error, Debug)]
     pub enum Error<E: backend::Error> {
         /// An error was returned by the backend
         #[error("An error was returned by the backend:\n{0}")]

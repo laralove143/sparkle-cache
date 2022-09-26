@@ -57,7 +57,7 @@ impl<E: Error> From<E> for cache::Error<E> {
 /// or NoSQL backend
 ///
 /// ```ignore
-/// use twilight_cache::backend::Backend;
+/// use sparkle_cache::backend::Backend;
 /// use twilight_model::id::{
 ///     marker::{GuildMarker, UserMarker},
 ///     Id,

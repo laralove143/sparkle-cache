@@ -1,4 +1,4 @@
-# Twilight Cache with Any Backend
+# Sparkle Cache
 
 A backend-agnostic Discord cache implementation for the Twilight ecosystem
 

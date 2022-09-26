@@ -18,7 +18,7 @@ use crate::{
     model::{
         CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
         CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
-        CachedPresence, CachedReaction, CachedRole, CachedSticker,
+        CachedPermissionOverwrite, CachedPresence, CachedReaction, CachedRole, CachedSticker,
     },
 };
 
@@ -106,6 +106,21 @@ pub trait Backend {
 
     /// Remove a channel from the cache
     async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;
+
+    /// Add a permission overwrite to the cache
+    async fn upsert_permission_overwrite(
+        &self,
+        permission_overwrite: CachedPermissionOverwrite,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a channel's permission overwrites from the cache
+    ///
+    /// This should be something like `DELETE FROM channel_overwrites WHERE
+    /// channel_id = ?`
+    async fn delete_channel_permission_overwrites(
+        &self,
+        channel_id: Id<ChannelMarker>,
+    ) -> Result<(), Self::Error>;
 
     /// Remove a guild's channels from the cache
     ///

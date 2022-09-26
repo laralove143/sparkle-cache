@@ -5,7 +5,7 @@
     clippy::struct_excessive_bools
 )]
 
-pub use channel::CachedChannel;
+pub use channel::{CachedChannel, CachedPermissionOverwrite};
 pub use emoji::CachedEmoji;
 pub use guild::CachedGuild;
 pub use member::CachedMember;
@@ -17,7 +17,7 @@ pub use reaction::CachedReaction;
 pub use role::CachedRole;
 pub use sticker::CachedSticker;
 
-/// Definition and implementations for [`CachedChannel`]
+/// Definition and implementations for [`CachedChannel`] and its fields
 mod channel;
 /// Definition and implementations for [`CachedEmoji`]
 mod emoji;

@@ -1,15 +1,51 @@
 use twilight_model::{
     channel::{
-        permission_overwrite::PermissionOverwrite,
+        permission_overwrite::{PermissionOverwrite, PermissionOverwriteType},
         thread::{AutoArchiveDuration, ThreadMetadata},
         Channel, ChannelType, VideoQualityMode,
     },
+    guild::Permissions,
     id::{
-        marker::{ApplicationMarker, ChannelMarker, GuildMarker, UserMarker},
+        marker::{ApplicationMarker, ChannelMarker, GenericMarker, GuildMarker, UserMarker},
         Id,
     },
     util::ImageHash,
 };
+
+/// A cached permission overwrite
+///
+/// It's the same as
+/// [`twilight_model::channel::permission_overwrite::PermissionOverwrite`]
+/// except:
+///
+/// - `channel_id` field is added, making it possible to return a channel's
+///   permission overwrites
+#[derive(Clone, Copy, Debug)]
+pub struct CachedPermissionOverwrite {
+    pub channel_id: Id<ChannelMarker>,
+    pub allow: Permissions,
+    pub deny: Permissions,
+    pub id: Id<GenericMarker>,
+    pub kind: PermissionOverwriteType,
+}
+
+impl CachedPermissionOverwrite {
+    /// Create a cached permission overwrite from a given permission overwrite
+    /// and channel ID
+    #[must_use]
+    pub const fn from_permission_overwrite(
+        permission_overwrite: &PermissionOverwrite,
+        channel_id: Id<ChannelMarker>,
+    ) -> Self {
+        Self {
+            channel_id,
+            allow: permission_overwrite.allow,
+            deny: permission_overwrite.deny,
+            id: permission_overwrite.id,
+            kind: permission_overwrite.kind,
+        }
+    }
+}
 
 /// A cached channel
 ///
@@ -17,6 +53,8 @@ use twilight_model::{
 ///
 /// - `recipients` field is removed, as it's only sent in DM channels, which are
 ///   cached separately
+///
+/// - `permission_overwrites` field is removed, as they're cached separately
 ///
 /// - `last_message_id`, `last_pin_timestamp`, `member_count` and
 ///   `message_count` fields are removed, as keeping them up-to-date would add
@@ -38,7 +76,6 @@ pub struct CachedChannel {
     pub nsfw: Option<bool>,
     pub owner_id: Option<Id<UserMarker>>,
     pub parent_id: Option<Id<ChannelMarker>>,
-    pub permission_overwrites: Option<Vec<PermissionOverwrite>>,
     pub position: Option<i32>,
     pub rate_limit_per_user: Option<u16>,
     pub rtc_region: Option<String>,
@@ -63,7 +100,6 @@ impl From<&Channel> for CachedChannel {
             nsfw: channel.nsfw,
             owner_id: channel.owner_id,
             parent_id: channel.parent_id,
-            permission_overwrites: channel.permission_overwrites.clone(),
             position: channel.position,
             rate_limit_per_user: channel.rate_limit_per_user,
             rtc_region: channel.rtc_region.clone(),

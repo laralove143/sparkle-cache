@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 pub use error::Error;
 use twilight_model::{
-    channel::{Channel, ChannelType, StageInstance},
+    channel::{permission_overwrite::PermissionOverwrite, Channel, ChannelType, StageInstance},
     gateway::event::Event,
     guild::Permissions,
     id::{
@@ -19,7 +19,7 @@ use crate::{
     model::{
         CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
         CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
-        CachedPresence, CachedReaction, CachedRole, CachedSticker,
+        CachedPermissionOverwrite, CachedPresence, CachedReaction, CachedRole, CachedSticker,
     },
     Backend,
 };
@@ -145,6 +145,8 @@ pub trait Cache: Backend {
                 self.add_channel(channel).await?;
             }
             Event::ChannelDelete(channel) => {
+                self.delete_channel_permission_overwrites(channel.id)
+                    .await?;
                 self.delete_channel(channel.id).await?;
             }
             Event::ThreadCreate(thread) => {
@@ -154,6 +156,7 @@ pub trait Cache: Backend {
                 self.add_channel(thread).await?;
             }
             Event::ThreadDelete(thread) => {
+                self.delete_channel_permission_overwrites(thread.id).await?;
                 self.delete_channel(thread.id).await?;
             }
             Event::GuildCreate(guild) => {
@@ -192,6 +195,10 @@ pub trait Cache: Backend {
             }
             Event::GuildDelete(guild) => {
                 if !guild.unavailable {
+                    for channel in self.guild_channels(guild.id).await? {
+                        self.delete_channel_permission_overwrites(channel.id)
+                            .await?;
+                    }
                     self.delete_guild_channels(guild.id).await?;
                     self.delete_guild_emojis(guild.id).await?;
                     self.delete_guild_stickers(guild.id).await?;
@@ -499,7 +506,17 @@ pub trait Cache: Backend {
         let permissions = if let Some(channel) = cached_channel {
             calculator.in_channel(
                 channel.kind,
-                &channel.permission_overwrites.unwrap_or_default(),
+                &self
+                    .permission_overwrites(channel.id)
+                    .await?
+                    .iter()
+                    .map(|overwrite| PermissionOverwrite {
+                        allow: overwrite.allow,
+                        deny: overwrite.deny,
+                        id: overwrite.id,
+                        kind: overwrite.kind,
+                    })
+                    .collect::<Vec<_>>(),
             )
         } else {
             calculator.root()
@@ -537,6 +554,18 @@ pub trait Cache: Backend {
         &self,
         channel_id: Id<ChannelMarker>,
     ) -> Result<Option<CachedChannel>, Error<Self::Error>>;
+
+    /// Get a guild's channels or threads by its ID
+    async fn guild_channels(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedChannel>, Error<Self::Error>>;
+
+    /// Get a cached permission overwrites of a channel by its ID
+    async fn permission_overwrites(
+        &self,
+        channel_id: Id<ChannelMarker>,
+    ) -> Result<Vec<CachedPermissionOverwrite>, Error<Self::Error>>;
 
     /// Get a DM channel's ID by its recipient's ID
     ///
@@ -646,6 +675,16 @@ pub trait Cache: Backend {
             self.upsert_private_channel(channel.id, recipient_user_id)
                 .await?;
         } else {
+            for overwrite in channel
+                .permission_overwrites
+                .as_ref()
+                .unwrap_or(&Vec::new())
+            {
+                self.upsert_permission_overwrite(
+                    CachedPermissionOverwrite::from_permission_overwrite(overwrite, channel.id),
+                )
+                .await?;
+            }
             self.upsert_channel(CachedChannel::from(channel)).await?;
         }
 

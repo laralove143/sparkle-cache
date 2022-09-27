@@ -1,7 +1,7 @@
 use twilight_model::{
-    guild::{Permissions, Role, RoleTags},
+    guild::{Permissions, Role},
     id::{
-        marker::{GuildMarker, RoleMarker, UserMarker},
+        marker::{GuildMarker, IntegrationMarker, RoleMarker, UserMarker},
         Id,
     },
     util::ImageHash,
@@ -14,6 +14,8 @@ use twilight_model::{
 /// - `guild_id` field is added, making it possible to return a guild's roles
 ///
 /// - `user_id` field is added, making it possible to return a member's roles
+///
+/// - `tags` field is flattened, making this struct easier to cache
 #[derive(Clone, Debug)]
 pub struct CachedRole {
     pub guild_id: Id<GuildMarker>,
@@ -27,7 +29,9 @@ pub struct CachedRole {
     pub name: String,
     pub permissions: Permissions,
     pub position: i64,
-    pub tags: Option<RoleTags>,
+    pub tags_bot_id: Option<Id<UserMarker>>,
+    pub tags_integration_id: Option<Id<IntegrationMarker>>,
+    pub tags_premium_subscriber: Option<bool>,
     pub unicode_emoji: Option<String>,
 }
 
@@ -48,7 +52,9 @@ impl CachedRole {
             name: role.name,
             permissions: role.permissions,
             position: role.position,
-            tags: role.tags,
+            tags_bot_id: role.tags.as_ref().and_then(|tags| tags.bot_id),
+            tags_integration_id: role.tags.as_ref().and_then(|tags| tags.integration_id),
+            tags_premium_subscriber: role.tags.map(|tags| tags.premium_subscriber),
             unicode_emoji: role.unicode_emoji,
         }
     }

@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 pub use error::Error;
 use twilight_model::{
-    channel::{permission_overwrite::PermissionOverwrite, Channel, ChannelType, StageInstance},
+    channel::{
+        permission_overwrite::PermissionOverwrite, Channel, ChannelType, ReactionType,
+        StageInstance,
+    },
     gateway::event::Event,
     guild::Permissions,
     id::{
@@ -340,13 +343,22 @@ pub trait Cache: Backend {
                 self.delete_reaction(
                     reaction.message_id,
                     reaction.user_id,
-                    reaction.emoji.clone(),
+                    match &reaction.emoji {
+                        ReactionType::Custom { id, .. } => id.to_string(),
+                        ReactionType::Unicode { name } => name.clone(),
+                    },
                 )
                 .await?;
             }
             Event::ReactionRemoveEmoji(reaction) => {
-                self.delete_message_reactions_by_emoji(reaction.message_id, reaction.emoji.clone())
-                    .await?;
+                self.delete_message_reactions_by_emoji(
+                    reaction.message_id,
+                    match &reaction.emoji {
+                        ReactionType::Custom { id, .. } => id.to_string(),
+                        ReactionType::Unicode { name } => name.clone(),
+                    },
+                )
+                .await?;
             }
             Event::ReactionRemoveAll(reaction) => {
                 self.delete_message_reactions(reaction.message_id).await?;

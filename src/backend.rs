@@ -2,7 +2,7 @@ use core::fmt::Display;
 
 use async_trait::async_trait;
 use twilight_model::{
-    channel::{ReactionType, StageInstance},
+    channel::StageInstance,
     id::{
         marker::{
             ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, RoleMarker,
@@ -269,7 +269,7 @@ pub trait Backend {
         &self,
         message_id: Id<MessageMarker>,
         user_id: Id<UserMarker>,
-        emoji: ReactionType,
+        emoji: String,
     ) -> Result<(), Self::Error>;
 
     /// Remove a message's reactions of the given emoji from the cache
@@ -279,7 +279,7 @@ pub trait Backend {
     async fn delete_message_reactions_by_emoji(
         &self,
         message_id: Id<MessageMarker>,
-        emoji: ReactionType,
+        emoji: String,
     ) -> Result<(), Self::Error>;
 
     /// Remove a message's reactions from the cache

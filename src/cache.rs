@@ -39,14 +39,11 @@ mod error {
         },
     };
 
-    use crate::{
-        backend,
-        model::{CachedChannel, CachedMember},
-    };
+    use crate::model::{CachedChannel, CachedMember};
 
     /// The errors the cache might return
     #[derive(Error, Debug)]
-    pub enum Error<E: backend::Error> {
+    pub enum Error<E: Send> {
         /// An error was returned by the backend
         #[error("An error was returned by the backend:\n{0}")]
         Backend(E),

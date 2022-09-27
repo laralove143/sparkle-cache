@@ -22,10 +22,7 @@ use crate::{
     },
 };
 
-/// Implemented on backend errors, for example `sqlx::Error`
-pub trait Error: Display + Send {}
-
-impl<E: Error> From<E> for cache::Error<E> {
+impl<E: Display + Send> From<E> for cache::Error<E> {
     fn from(err: E) -> Self {
         Self::Backend(err)
     }
@@ -96,7 +93,7 @@ impl<E: Error> From<E> for cache::Error<E> {
 #[async_trait]
 pub trait Backend {
     /// The error type the backend returns, for example `sqlx::Error`
-    type Error: Error;
+    type Error: Display + Send;
 
     /// Set or replace the current user information of the bot
     async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Self::Error>;

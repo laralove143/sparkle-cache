@@ -15,8 +15,8 @@ use twilight_model::{
 /// - `buttons` field is removed, as caching it is likely unnecessary, if you
 ///   need this field, please create an issue
 ///
-/// - `assets`, `emoji`, `party` and `party` fields are flattened, making this
-///   struct easier to cache
+/// - `assets`, `emoji`, `party` and `timestamps` fields are flattened, making
+///   this struct easier to cache
 ///
 /// - `secrets` field is removed, as it's not sent to bots
 #[derive(Clone, Debug)]
@@ -38,7 +38,8 @@ pub struct CachedActivity {
     pub kind: ActivityType,
     pub name: String,
     pub party_id: Option<String>,
-    pub party_size: Option<[u64; 2]>,
+    pub party_size_current: Option<u64>,
+    pub party_size_max: Option<u64>,
     pub state: Option<String>,
     pub timestamp_end: Option<u64>,
     pub timestamp_start: Option<u64>,
@@ -79,7 +80,14 @@ impl CachedActivity {
             kind: activity.kind,
             name: activity.name.clone(),
             party_id: activity.party.as_ref().and_then(|party| party.id.clone()),
-            party_size: activity.party.as_ref().and_then(|party| party.size),
+            party_size_current: activity
+                .party
+                .as_ref()
+                .and_then(|party| party.size.map(|size| size[0])),
+            party_size_max: activity
+                .party
+                .as_ref()
+                .and_then(|party| party.size.map(|size| size[1])),
             state: activity.state.clone(),
             timestamp_end: activity
                 .timestamps

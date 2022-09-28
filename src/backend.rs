@@ -28,14 +28,19 @@ impl<E: Display + Send> From<E> for cache::Error<E> {
     }
 }
 
-/// Provides methods to add or replace data in the cache
+/// Provides methods to add, replace or delete data in the cache
 ///
 /// This is for adding support for a backend, users of the cache itself only
 /// need the methods in [`super::Cache`]
 ///
-/// All of the IDs are unique unless documented otherwise, this means if the ID
-/// is already in the cache, the new value's fields should overwrite the current
-/// fields, most backends abstract over this
+/// # Uniqueness
+///
+/// Unless documented otherwise, only the main `id` field is unique, if there's
+/// other fields that are also unique, they will be documented
+///
+/// None of the upsert methods should return an error on a conflict, unless
+/// documented otherwise, they should delete the old value and insert
+/// the new one (or replace all fields with their new values)
 ///
 /// # This trait is not complete
 ///
@@ -105,6 +110,8 @@ pub trait Backend {
     async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;
 
     /// Add a permission overwrite to the cache
+    ///
+    /// None of the fields in this type is unique
     async fn upsert_permission_overwrite(
         &self,
         permission_overwrite: CachedPermissionOverwrite,
@@ -124,7 +131,9 @@ pub trait Backend {
     /// This should be something like `DELETE FROM channels WHERE guild_id = ?`
     async fn delete_guild_channels(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add a DM channel to the cache, both of the IDs are unique
+    /// Add a DM channel to the cache
+    ///
+    /// Both of the IDs in this type are unique
     async fn upsert_private_channel(
         &self,
         channel_id: Id<ChannelMarker>,
@@ -169,7 +178,7 @@ pub trait Backend {
         guild_id: Id<GuildMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Remove a guild's stickers from the cache
+    /// Remove a guild's members from the cache
     ///
     /// This should be something like `DELETE FROM members WHERE guild_id = ?`
     async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
@@ -180,13 +189,15 @@ pub trait Backend {
     /// Remove a message from the cache
     async fn delete_message(&self, message_id: Id<MessageMarker>) -> Result<(), Self::Error>;
 
-    /// Add an embed to the cache, the embed ID is unique
+    /// Add an embed to the cache
     async fn upsert_embed(&self, embed: CachedEmbed) -> Result<(), Self::Error>;
 
     /// Remove an embed from the cache
     async fn delete_embed(&self, embed_id: Id<GenericMarker>) -> Result<(), Self::Error>;
 
-    /// Add an embed field to the cache, the embed ID is not unique
+    /// Add an embed field to the cache
+    ///
+    /// None of the fields in this type is unique
     async fn upsert_embed_field(&self, embed_field: CachedEmbedField) -> Result<(), Self::Error>;
 
     /// Remove an embed's fields from the cache
@@ -211,7 +222,7 @@ pub trait Backend {
         embed_id: Id<GenericMarker>,
     ) -> Result<Vec<CachedEmbedField>, Self::Error>;
 
-    /// Add an attachment to the cache, the message ID is not unique
+    /// Add an attachment to the cache
     async fn upsert_attachment(&self, attachment: CachedAttachment) -> Result<(), Self::Error>;
 
     /// Remove a message's attachments from the cache
@@ -224,6 +235,8 @@ pub trait Backend {
     ) -> Result<(), Self::Error>;
 
     /// Add or replace a message sticker in the cache
+    ///
+    /// None of the fields in this type is unique
     async fn upsert_message_sticker(
         &self,
         sticker: CachedMessageSticker,
@@ -249,7 +262,9 @@ pub trait Backend {
     /// This should be something like `DELETE FROM presences WHERE guild_id = ?`
     async fn delete_guild_presences(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add an activity to the cache, none of the activity's IDs are unique
+    /// Add an activity to the cache
+    ///
+    /// None of the fields in this type is unique
     async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
 
     /// Remove a user's activities from the cache
@@ -257,8 +272,10 @@ pub trait Backend {
     /// This should be something like `DELETE FROM activities WHERE user_id = ?`
     async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 
-    /// Add a reaction to the cache, only the combination of message ID, user ID
-    /// and emoji is unique, they're not unique on their own
+    /// Add a reaction to the cache
+    ///
+    /// Only the combination of message ID, user ID and emoji is unique, they're
+    /// not unique on their own
     async fn upsert_reaction(&self, reaction: CachedReaction) -> Result<(), Self::Error>;
 
     /// Remove a reaction from the cache
@@ -288,10 +305,12 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add or update a role to the cache, only the combination of role ID and
-    /// user ID is unique, they're not unique on their own
+    /// Add or update a role to the cache
     ///
-    /// When updating roles, make sure the user IDs remain untouched
+    /// Only the combination of role ID and user ID is unique, they're not
+    /// unique on their own
+    ///
+    /// When updating roles, make sure not to update the user ID field
     async fn upsert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
 
     /// Remove a role from the cache

@@ -50,9 +50,6 @@ mod error {
         /// The DM channel doesn't have any recipients other than the bot itself
         #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
         PrivateChannelMissingRecipient(Box<Channel>),
-        /// The thread doesn't have a parent ID
-        #[error("The thread doesn't have a parent ID:\n{0:?}")]
-        ThreadMissingParent(Box<CachedChannel>),
         /// The current user isn't in the cache
         #[error("The current user isn't in the cache")]
         CurrentUserMissing,
@@ -67,11 +64,9 @@ mod error {
             /// The missing role's ID
             role_id: Id<RoleMarker>,
         },
-        /// The member's communication disabled until timestamp isn't valid
-        #[error(
-            "The communication disabled until timestamp of the given member to calculate \
-             permissions for isn't valid:\n{0:?}"
-        )]
+        /// The timestamp the member's communication is disabled until isn't
+        /// valid
+        #[error("The timestamp the member's communication is disabled until isn't valid:\n{0:?}")]
         MemberBadTimeoutTimestamp(Box<CachedMember>),
         /// The channel to calculate permissions for isn't in the cache
         #[error("The channel to calculate permissions for isn't in the cache:\n{0}")]
@@ -568,7 +563,7 @@ pub trait Cache: Backend {
         channel_id: Id<ChannelMarker>,
     ) -> Result<Option<CachedChannel>, Error<Self::Error>>;
 
-    /// Get a guild's channels or threads by its ID
+    /// Get a guild's channels and threads by its ID
     async fn guild_channels(
         &self,
         guild_id: Id<GuildMarker>,
@@ -588,32 +583,7 @@ pub trait Cache: Backend {
         &self,
         recipient_id: Id<UserMarker>,
     ) -> Result<Option<Id<ChannelMarker>>, Error<Self::Error>>;
-
-    /// Get a cached guild by its ID
-    async fn guild(
-        &self,
-        guild_id: Id<GuildMarker>,
-    ) -> Result<Option<CachedGuild>, Error<Self::Error>>;
-
-    /// Get a cached emoji by its ID
-    async fn emoji(
-        &self,
-        emoji_id: Id<EmojiMarker>,
-    ) -> Result<Option<CachedEmoji>, Error<Self::Error>>;
-
-    /// Get a cached sticker by its ID
-    async fn sticker(
-        &self,
-        sticker_id: Id<StickerMarker>,
-    ) -> Result<Option<CachedSticker>, Error<Self::Error>>;
-
-    /// Get a cached member by its guild ID and user ID
-    async fn member(
-        &self,
-        guild_id: Id<GuildMarker>,
-        user_id: Id<UserMarker>,
-    ) -> Result<Option<CachedMember>, Error<Self::Error>>;
-
+    
     /// Get a cached message by its ID
     ///
     /// The returned message doesn't contain embeds, attachments, reactions or
@@ -632,7 +602,7 @@ pub trait Cache: Backend {
         let mut embeds = vec![];
         let cached_embeds = self.cached_embeds(message_id).await?;
         for embed in cached_embeds {
-            let fields = self.embed_fields(embed.id).await?;
+            let fields = self.cached_embed_fields(embed.id).await?;
             embeds.push((embed, fields));
         }
         Ok(embeds)
@@ -644,21 +614,24 @@ pub trait Cache: Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedAttachment>, Error<Self::Error>>;
 
-    /// Get cached stickers of a message by its ID
-    async fn stickers(
-        &self,
-        message_id: Id<MessageMarker>,
-    ) -> Result<Vec<CachedSticker>, Error<Self::Error>>;
-
     /// Get cached reactions of a message by its ID
     async fn reactions(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
-
-    /// Get a cached role by its ID
-    async fn role(&self, role_id: Id<RoleMarker>)
-        -> Result<Option<CachedRole>, Error<Self::Error>>;
+    
+    /// Get cached stickers of a message by its ID
+    async fn stickers(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<Vec<CachedSticker>, Error<Self::Error>>;
+    
+    /// Get a cached member by its guild ID and user ID
+    async fn member(
+        &self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> Result<Option<CachedMember>, Error<Self::Error>>;
 
     /// Get cached roles of a member by their ID
     async fn member_roles(
@@ -666,6 +639,28 @@ pub trait Cache: Backend {
         user_id: Id<UserMarker>,
         guild_id: Id<GuildMarker>,
     ) -> Result<Vec<CachedRole>, Error<Self::Error>>;
+    
+    /// Get a cached guild by its ID
+    async fn guild(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Option<CachedGuild>, Error<Self::Error>>;
+
+    /// Get a cached role by its ID
+    async fn role(&self, role_id: Id<RoleMarker>)
+        -> Result<Option<CachedRole>, Error<Self::Error>>;
+
+    /// Get a cached emoji by its ID
+    async fn emoji(
+        &self,
+        emoji_id: Id<EmojiMarker>,
+    ) -> Result<Option<CachedEmoji>, Error<Self::Error>>;
+
+    /// Get a cached sticker by its ID
+    async fn sticker(
+        &self,
+        sticker_id: Id<StickerMarker>,
+    ) -> Result<Option<CachedSticker>, Error<Self::Error>>;
 
     /// Get a cached stage instance by its ID
     async fn stage_instance(
@@ -704,26 +699,6 @@ pub trait Cache: Backend {
         Ok(())
     }
 
-    /// Given a [`twilight_model::channel::ChannelType::Private`] returns the
-    /// first recipient's ID that's not the current user
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::PrivateChannelMissingRecipient`]
-    #[doc(hidden)]
-    async fn private_channel_recipient(
-        &self,
-        channel: &Channel,
-    ) -> Result<Id<UserMarker>, Error<Self::Error>> {
-        let current_user_id = self.current_user().await?.id;
-        let recipient_user_id = channel
-            .recipients
-            .as_ref()
-            .and_then(|recipients| recipients.iter().find(|user| user.id == current_user_id))
-            .ok_or_else(|| Error::PrivateChannelMissingRecipient(Box::new(channel.clone())))?
-            .id;
-        Ok(recipient_user_id)
-    }
 
     /// Updates the cache with the member's roles
     #[doc(hidden)]
@@ -760,5 +735,26 @@ pub trait Cache: Backend {
         self.delete_message_stickers(message_id).await?;
         self.delete_message(message_id).await?;
         Ok(())
+    }
+
+    /// Given a [`twilight_model::channel::ChannelType::Private`] returns the
+    /// first recipient's ID that's not the current user
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PrivateChannelMissingRecipient`]
+    #[doc(hidden)]
+    async fn private_channel_recipient(
+        &self,
+        channel: &Channel,
+    ) -> Result<Id<UserMarker>, Error<Self::Error>> {
+        let current_user_id = self.current_user().await?.id;
+        let recipient_user_id = channel
+            .recipients
+            .as_ref()
+            .and_then(|recipients| recipients.iter().find(|user| user.id == current_user_id))
+            .ok_or_else(|| Error::PrivateChannelMissingRecipient(Box::new(channel.clone())))?
+            .id;
+        Ok(recipient_user_id)
     }
 }

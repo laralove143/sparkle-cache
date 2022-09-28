@@ -109,6 +109,11 @@ pub trait Backend {
     /// Remove a channel from the cache
     async fn delete_channel(&self, channel_id: Id<ChannelMarker>) -> Result<(), Self::Error>;
 
+    /// Remove a guild's channels from the cache
+    ///
+    /// This should be something like `DELETE FROM channels WHERE guild_id = ?`
+    async fn delete_guild_channels(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
     /// Add a permission overwrite to the cache
     ///
     /// None of the fields in this type is unique
@@ -126,11 +131,6 @@ pub trait Backend {
         channel_id: Id<ChannelMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Remove a guild's channels from the cache
-    ///
-    /// This should be something like `DELETE FROM channels WHERE guild_id = ?`
-    async fn delete_guild_channels(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
-
     /// Add a DM channel to the cache
     ///
     /// Both of the IDs in this type are unique
@@ -139,58 +139,6 @@ pub trait Backend {
         channel_id: Id<ChannelMarker>,
         user_id: Id<UserMarker>,
     ) -> Result<(), Self::Error>;
-
-    /// Add or replace a guild in the cache
-    async fn upsert_guild(&self, guild: CachedGuild) -> Result<(), Self::Error>;
-
-    /// Remove a channel from the cache
-    async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
-
-    /// Add or replace an emoji in the cache
-    async fn upsert_emoji(&self, emoji: CachedEmoji) -> Result<(), Self::Error>;
-
-    /// Remove an emoji from the cache
-    async fn delete_emoji(&self, emoji_id: Id<EmojiMarker>) -> Result<(), Self::Error>;
-
-    /// Remove a guild's emojis from the cache
-    ///
-    /// This should be something like `DELETE FROM emojis WHERE guild_id = ?`
-    async fn delete_guild_emojis(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
-
-    /// Add or replace a sticker in the cache
-    ///
-    /// When updating stickers, make sure not to update the message ID field
-    async fn upsert_sticker(&self, sticker: CachedSticker) -> Result<(), Self::Error>;
-
-    /// Remove a message's stickers from the cache
-    ///
-    /// This should be something like `DELETE FROM stickers WHERE
-    /// message_id = ?`
-    async fn delete_message_stickers(
-        &self,
-        message_id: Id<MessageMarker>,
-    ) -> Result<(), Self::Error>;
-
-    /// Remove a guild's stickers from the cache
-    ///
-    /// This should be something like `DELETE FROM stickers WHERE guild_id = ?
-    /// AND message_id IS NULL`
-    async fn delete_guild_stickers(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
-
-    /// Add or replace a member in the cache
-    async fn upsert_member(&self, member: CachedMember) -> Result<(), Self::Error>;
-
-    /// Remove a member from the cache
-    async fn delete_member(
-        &self,
-        user_id: Id<UserMarker>,
-        guild_id: Id<GuildMarker>,
-    ) -> Result<(), Self::Error>;
-
-    /// Remove a guild's members from the cache
-    ///
-    /// This should be something like `DELETE FROM members WHERE guild_id = ?`
-    async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
     /// Add or replace a message in the cache
     async fn upsert_message(&self, message: CachedMessage) -> Result<(), Self::Error>;
@@ -226,7 +174,7 @@ pub trait Backend {
     /// Get fields of an embed by its ID
     ///
     /// This method is used internally in [`super::Cache::embeds`]
-    async fn embed_fields(
+    async fn cached_embed_fields(
         &self,
         embed_id: Id<GenericMarker>,
     ) -> Result<Vec<CachedEmbedField>, Self::Error>;
@@ -242,27 +190,6 @@ pub trait Backend {
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
-
-    /// Add or replace a presence in the cache
-    async fn upsert_presence(&self, presence: CachedPresence) -> Result<(), Self::Error>;
-
-    /// Remove a presence from the cache
-    async fn delete_presence(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
-
-    /// Remove a guild's presences from the cache
-    ///
-    /// This should be something like `DELETE FROM presences WHERE guild_id = ?`
-    async fn delete_guild_presences(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
-
-    /// Add an activity to the cache
-    ///
-    /// None of the fields in this type is unique
-    async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
-
-    /// Remove a user's activities from the cache
-    ///
-    /// This should be something like `DELETE FROM activities WHERE user_id = ?`
-    async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 
     /// Add a reaction to the cache
     ///
@@ -297,6 +224,48 @@ pub trait Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;
 
+    /// Add or replace a member in the cache
+    async fn upsert_member(&self, member: CachedMember) -> Result<(), Self::Error>;
+
+    /// Remove a member from the cache
+    async fn delete_member(
+        &self,
+        user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a guild's members from the cache
+    ///
+    /// This should be something like `DELETE FROM members WHERE guild_id = ?`
+    async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a presence in the cache
+    async fn upsert_presence(&self, presence: CachedPresence) -> Result<(), Self::Error>;
+
+    /// Remove a presence from the cache
+    async fn delete_presence(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a guild's presences from the cache
+    ///
+    /// This should be something like `DELETE FROM presences WHERE guild_id = ?`
+    async fn delete_guild_presences(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add an activity to the cache
+    ///
+    /// None of the fields in this type is unique
+    async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
+
+    /// Remove a user's activities from the cache
+    ///
+    /// This should be something like `DELETE FROM activities WHERE user_id = ?`
+    async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a guild in the cache
+    async fn upsert_guild(&self, guild: CachedGuild) -> Result<(), Self::Error>;
+
+    /// Remove a channel from the cache
+    async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
     /// Add or update a role to the cache
     ///
     /// Only the combination of role ID and user ID is unique, they're not
@@ -322,6 +291,37 @@ pub trait Backend {
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
     ) -> Result<(), Self::Error>;
+
+    /// Add or replace an emoji in the cache
+    async fn upsert_emoji(&self, emoji: CachedEmoji) -> Result<(), Self::Error>;
+
+    /// Remove an emoji from the cache
+    async fn delete_emoji(&self, emoji_id: Id<EmojiMarker>) -> Result<(), Self::Error>;
+
+    /// Remove a guild's emojis from the cache
+    ///
+    /// This should be something like `DELETE FROM emojis WHERE guild_id = ?`
+    async fn delete_guild_emojis(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
+
+    /// Add or replace a sticker in the cache
+    ///
+    /// When updating stickers, make sure not to update the message ID field
+    async fn upsert_sticker(&self, sticker: CachedSticker) -> Result<(), Self::Error>;
+
+    /// Remove a message's stickers from the cache
+    ///
+    /// This should be something like `DELETE FROM stickers WHERE
+    /// message_id = ?`
+    async fn delete_message_stickers(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Self::Error>;
+
+    /// Remove a guild's stickers from the cache
+    ///
+    /// This should be something like `DELETE FROM stickers WHERE guild_id = ?
+    /// AND message_id IS NULL`
+    async fn delete_guild_stickers(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
     /// Add or replace a stage instance in the cache
     async fn upsert_stage_instance(&self, stage: StageInstance) -> Result<(), Self::Error>;

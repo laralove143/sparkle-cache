@@ -6,7 +6,7 @@ use twilight_model::{
     id::{
         marker::{
             ChannelMarker, EmojiMarker, GenericMarker, GuildMarker, MessageMarker, RoleMarker,
-            StageMarker, StickerMarker, UserMarker,
+            StageMarker, UserMarker,
         },
         Id,
     },
@@ -17,8 +17,8 @@ use crate::{
     cache,
     model::{
         CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
-        CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
-        CachedPermissionOverwrite, CachedPresence, CachedReaction, CachedRole, CachedSticker,
+        CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedPermissionOverwrite,
+        CachedPresence, CachedReaction, CachedRole, CachedSticker,
     },
 };
 
@@ -158,14 +158,23 @@ pub trait Backend {
     async fn delete_guild_emojis(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
     /// Add or replace a sticker in the cache
+    ///
+    /// When updating stickers, make sure not to update the message ID field
     async fn upsert_sticker(&self, sticker: CachedSticker) -> Result<(), Self::Error>;
 
-    /// Remove a sticker from the cache
-    async fn delete_sticker(&self, sticker_id: Id<StickerMarker>) -> Result<(), Self::Error>;
+    /// Remove a message's stickers from the cache
+    ///
+    /// This should be something like `DELETE FROM stickers WHERE
+    /// message_id = ?`
+    async fn delete_message_stickers(
+        &self,
+        message_id: Id<MessageMarker>,
+    ) -> Result<(), Self::Error>;
 
     /// Remove a guild's stickers from the cache
     ///
-    /// This should be something like `DELETE FROM stickers WHERE guild_id = ?`
+    /// This should be something like `DELETE FROM stickers WHERE guild_id = ?
+    /// AND message_id IS NULL`
     async fn delete_guild_stickers(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
     /// Add or replace a member in the cache
@@ -230,23 +239,6 @@ pub trait Backend {
     /// This should be something like `DELETE FROM attachments WHERE message_id
     /// = ?`
     async fn delete_message_attachments(
-        &self,
-        message_id: Id<MessageMarker>,
-    ) -> Result<(), Self::Error>;
-
-    /// Add or replace a message sticker in the cache
-    ///
-    /// None of the fields in this type is unique
-    async fn upsert_message_sticker(
-        &self,
-        sticker: CachedMessageSticker,
-    ) -> Result<(), Self::Error>;
-
-    /// Remove a message's stickers from the cache
-    ///
-    /// This should be something like `DELETE FROM message_stickers WHERE
-    /// message_id = ?`
-    async fn delete_message_stickers(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<(), Self::Error>;

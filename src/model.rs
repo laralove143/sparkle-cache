@@ -9,9 +9,7 @@ pub use channel::{CachedChannel, CachedPermissionOverwrite};
 pub use emoji::CachedEmoji;
 pub use guild::CachedGuild;
 pub use member::CachedMember;
-pub use message::{
-    CachedAttachment, CachedEmbed, CachedEmbedField, CachedMessage, CachedMessageSticker,
-};
+pub use message::{CachedAttachment, CachedEmbed, CachedEmbedField, CachedMessage};
 pub use presence::{CachedActivity, CachedPresence};
 pub use reaction::CachedReaction;
 pub use role::CachedRole;

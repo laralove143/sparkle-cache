@@ -1,17 +1,14 @@
 use twilight_model::{
     channel::{
         embed::{Embed, EmbedField},
-        message::{
-            sticker::{MessageSticker, StickerFormatType},
-            MessageActivityType, MessageFlags, MessageType,
-        },
+        message::{MessageActivityType, MessageFlags, MessageType},
         Attachment, Message,
     },
     gateway::payload::incoming::MessageUpdate,
     id::{
         marker::{
             ApplicationMarker, AttachmentMarker, ChannelMarker, GenericMarker, GuildMarker,
-            MessageMarker, StickerMarker, UserMarker, WebhookMarker,
+            MessageMarker, UserMarker, WebhookMarker,
         },
         Id,
     },
@@ -205,35 +202,6 @@ impl CachedAttachment {
             size: attachment.size,
             url: attachment.url,
             width: attachment.width,
-        }
-    }
-}
-
-/// A cached message sticker
-///
-/// It's the same as
-/// [`twilight_model::channel::message::sticker::MessageSticker`] except:
-///
-/// - `message_id` field is added, making it possible to return a message's
-///   stickers
-#[derive(Clone, Debug)]
-pub struct CachedMessageSticker {
-    pub message_id: Id<MessageMarker>,
-    pub format_type: StickerFormatType,
-    pub id: Id<StickerMarker>,
-    pub name: String,
-}
-
-impl CachedMessageSticker {
-    /// Create a cached message sticker from a given sticker and message ID
-    #[allow(clippy::missing_const_for_fn)]
-    #[must_use]
-    pub fn from_sticker(sticker: MessageSticker, message_id: Id<MessageMarker>) -> Self {
-        Self {
-            message_id,
-            format_type: sticker.format_type,
-            id: sticker.id,
-            name: sticker.name,
         }
     }
 }

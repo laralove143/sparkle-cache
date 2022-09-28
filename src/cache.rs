@@ -21,8 +21,8 @@ use twilight_util::permission_calculator::PermissionCalculator;
 use crate::{
     model::{
         CachedActivity, CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField,
-        CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedMessageSticker,
-        CachedPermissionOverwrite, CachedPresence, CachedReaction, CachedRole, CachedSticker,
+        CachedEmoji, CachedGuild, CachedMember, CachedMessage, CachedPermissionOverwrite,
+        CachedPresence, CachedReaction, CachedRole, CachedSticker,
     },
     Backend,
 };
@@ -258,11 +258,15 @@ pub trait Cache: Backend {
                     ))
                     .await?;
                 }
-                for sticker in message.sticker_items.clone() {
-                    self.upsert_message_sticker(CachedMessageSticker::from_sticker(
-                        sticker, message.id,
-                    ))
-                    .await?;
+                for message_sticker in message.sticker_items.clone() {
+                    let sticker =
+                        if let Some(mut cached_sticker) = self.sticker(message_sticker.id).await? {
+                            cached_sticker.message_id = Some(message.id);
+                            cached_sticker
+                        } else {
+                            CachedSticker::from_message_sticker(message_sticker, message.id)
+                        };
+                    self.upsert_sticker(sticker).await?;
                 }
                 for embed in message.embeds.clone() {
                     let fields = embed.fields.clone();
@@ -644,7 +648,7 @@ pub trait Cache: Backend {
     async fn stickers(
         &self,
         message_id: Id<MessageMarker>,
-    ) -> Result<Vec<CachedMessageSticker>, Error<Self::Error>>;
+    ) -> Result<Vec<CachedSticker>, Error<Self::Error>>;
 
     /// Get cached reactions of a message by its ID
     async fn reactions(

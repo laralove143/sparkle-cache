@@ -12,6 +12,9 @@ use twilight_model::{
 ///
 /// - `user_id` field is added, making it possible to return a user's activities
 ///
+/// - `guild_id` field is added, making it possible to return the activities of
+///   a guild's members
+///
 /// - `buttons` field is removed, as caching it is likely unnecessary, if you
 ///   need this field, please create an issue
 ///
@@ -22,6 +25,7 @@ use twilight_model::{
 #[derive(Clone, Debug)]
 pub struct CachedActivity {
     pub user_id: Id<UserMarker>,
+    pub guild_id: Id<GuildMarker>,
     pub application_id: Option<Id<ApplicationMarker>>,
     pub asset_large_image: Option<String>,
     pub asset_large_text: Option<String>,
@@ -47,11 +51,16 @@ pub struct CachedActivity {
 }
 
 impl CachedActivity {
-    /// Create a cached activity from a given activity and user ID
+    /// Create a cached activity from a given activity, user ID and guild ID
     #[must_use]
-    pub fn from_activity(activity: &Activity, user_id: Id<UserMarker>) -> Self {
+    pub fn from_activity(
+        activity: &Activity,
+        user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
+    ) -> Self {
         Self {
             user_id,
+            guild_id,
             application_id: activity.application_id,
             asset_large_image: activity
                 .assets

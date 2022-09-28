@@ -320,11 +320,13 @@ pub trait Cache: Backend {
                 }
             }
             Event::PresenceUpdate(presence) => {
-                self.delete_user_activities(presence.user.id()).await?;
+                self.delete_user_activities(presence.guild_id, presence.user.id())
+                    .await?;
                 for activity in &presence.activities {
                     self.upsert_activity(CachedActivity::from_activity(
                         activity,
                         presence.user.id(),
+                        presence.guild_id,
                     ))
                     .await?;
                 }
@@ -583,7 +585,7 @@ pub trait Cache: Backend {
         &self,
         recipient_id: Id<UserMarker>,
     ) -> Result<Option<Id<ChannelMarker>>, Error<Self::Error>>;
-    
+
     /// Get a cached message by its ID
     ///
     /// The returned message doesn't contain embeds, attachments, reactions or
@@ -619,13 +621,13 @@ pub trait Cache: Backend {
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedReaction>, Error<Self::Error>>;
-    
+
     /// Get cached stickers of a message by its ID
     async fn stickers(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedSticker>, Error<Self::Error>>;
-    
+
     /// Get a cached member by its guild ID and user ID
     async fn member(
         &self,
@@ -639,7 +641,19 @@ pub trait Cache: Backend {
         user_id: Id<UserMarker>,
         guild_id: Id<GuildMarker>,
     ) -> Result<Vec<CachedRole>, Error<Self::Error>>;
-    
+
+    /// Get cached presence of a member by their ID
+    async fn presence(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> Result<Option<CachedPresence>, Error<Self::Error>>;
+
+    /// Get cached activities of a member by their ID
+    async fn member_activities(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> Result<Vec<CachedActivity>, Error<Self::Error>>;
+
     /// Get a cached guild by its ID
     async fn guild(
         &self,
@@ -698,7 +712,6 @@ pub trait Cache: Backend {
 
         Ok(())
     }
-
 
     /// Updates the cache with the member's roles
     #[doc(hidden)]

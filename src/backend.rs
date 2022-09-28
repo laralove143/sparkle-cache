@@ -225,6 +225,9 @@ pub trait Backend {
     ) -> Result<(), Self::Error>;
 
     /// Add or replace a member in the cache
+    ///
+    /// Only the combination of guild ID and user ID is unique, they're not
+    /// unique on their own
     async fn upsert_member(&self, member: CachedMember) -> Result<(), Self::Error>;
 
     /// Remove a member from the cache
@@ -240,10 +243,17 @@ pub trait Backend {
     async fn delete_guild_members(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
     /// Add or replace a presence in the cache
+    ///
+    /// Only the combination of guild ID and user ID is unique, they're not
+    /// unique on their own
     async fn upsert_presence(&self, presence: CachedPresence) -> Result<(), Self::Error>;
 
     /// Remove a presence from the cache
-    async fn delete_presence(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
+    async fn delete_presence(
+        &self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> Result<(), Self::Error>;
 
     /// Remove a guild's presences from the cache
     ///
@@ -252,13 +262,19 @@ pub trait Backend {
 
     /// Add an activity to the cache
     ///
-    /// None of the fields in this type is unique
+    /// Only the combination of guild ID and user ID is unique, they're not
+    /// unique on their own
     async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
 
     /// Remove a user's activities from the cache
     ///
-    /// This should be something like `DELETE FROM activities WHERE user_id = ?`
-    async fn delete_user_activities(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
+    /// This should be something like `DELETE FROM activities WHERE guild_id = ?
+    /// AND user_id = ?`
+    async fn delete_user_activities(
+        &self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> Result<(), Self::Error>;
 
     /// Add or replace a guild in the cache
     async fn upsert_guild(&self, guild: CachedGuild) -> Result<(), Self::Error>;

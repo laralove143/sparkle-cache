@@ -262,8 +262,7 @@ pub trait Backend {
 
     /// Add an activity to the cache
     ///
-    /// Only the combination of guild ID and user ID is unique, they're not
-    /// unique on their own
+    /// None of the fields in this type is unique
     async fn upsert_activity(&self, activity: CachedActivity) -> Result<(), Self::Error>;
 
     /// Remove a user's activities from the cache

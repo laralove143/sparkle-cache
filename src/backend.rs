@@ -166,7 +166,7 @@ pub trait Backend {
     /// Get embeds of a message by its ID
     ///
     /// This method is used internally in [`super::Cache::embeds`]
-    async fn cached_embeds(
+    async fn select_message_embeds(
         &self,
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedEmbed>, Self::Error>;
@@ -174,7 +174,7 @@ pub trait Backend {
     /// Get fields of an embed by its ID
     ///
     /// This method is used internally in [`super::Cache::embeds`]
-    async fn cached_embed_fields(
+    async fn select_embed_fields(
         &self,
         embed_id: Id<GenericMarker>,
     ) -> Result<Vec<CachedEmbedField>, Self::Error>;

@@ -602,9 +602,9 @@ pub trait Cache: Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<(CachedEmbed, Vec<CachedEmbedField>)>, Error<Self::Error>> {
         let mut embeds = vec![];
-        let cached_embeds = self.cached_embeds(message_id).await?;
+        let cached_embeds = self.select_message_embeds(message_id).await?;
         for embed in cached_embeds {
-            let fields = self.cached_embed_fields(embed.id).await?;
+            let fields = self.select_embed_fields(embed.id).await?;
             embeds.push((embed, fields));
         }
         Ok(embeds)

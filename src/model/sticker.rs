@@ -22,6 +22,7 @@ use twilight_model::{
 /// - `available`, `kind` and `tags` fields are made optional, as they're not
 ///   present in message stickers
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedSticker {
     pub message_id: Option<Id<MessageMarker>>,
     pub available: Option<bool>,

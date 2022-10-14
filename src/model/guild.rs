@@ -27,6 +27,7 @@ use twilight_model::{
 /// - `voice_states` field is removed, as voice-related caching is not handled
 ///   by this library
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedGuild {
     pub afk_channel_id: Option<Id<ChannelMarker>>,
     pub afk_timeout: u64,

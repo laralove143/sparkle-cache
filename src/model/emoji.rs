@@ -18,6 +18,7 @@ use twilight_model::{
 /// - `roles` field is removed, as caching it is likely unnecessary, if you need
 ///   this field, please create an issue
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedEmoji {
     pub guild_id: Id<GuildMarker>,
     pub animated: bool,

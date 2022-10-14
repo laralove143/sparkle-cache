@@ -77,6 +77,9 @@ pub mod cache;
 /// Definitions of cached structs, used when the cached data is different from
 /// the event data
 pub mod model;
+/// Functions related to testing the implementor of [`Cache`]
+#[cfg(feature = "tests")]
+pub mod tests;
 
 /// Used to create unique IDs when necessary
 static ID_COUNTER: AtomicI64 = AtomicI64::new(0);

@@ -21,6 +21,7 @@ use twilight_model::{
 /// - `channel_id` field is added, making it possible to return a channel's
 ///   permission overwrites
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedPermissionOverwrite {
     pub channel_id: Id<ChannelMarker>,
     pub allow: Permissions,
@@ -65,6 +66,7 @@ impl CachedPermissionOverwrite {
 ///
 /// - `thread_metadata` field is flattened, making this struct easier to cache
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedChannel {
     pub application_id: Option<Id<ApplicationMarker>>,
     pub bitrate: Option<u32>,

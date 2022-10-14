@@ -17,6 +17,7 @@ use twilight_model::{
 ///
 /// - `tags` field is flattened, making this struct easier to cache
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedRole {
     pub guild_id: Id<GuildMarker>,
     pub user_id: Option<Id<UserMarker>>,

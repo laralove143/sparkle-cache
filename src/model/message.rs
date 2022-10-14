@@ -23,6 +23,7 @@ use crate::unique_id;
 ///
 /// - `embed_id` field is added, making it possible to return an embed's fields
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedEmbedField {
     pub embed_id: Id<GenericMarker>,
     pub inline: bool,
@@ -57,6 +58,7 @@ impl CachedEmbedField {
 /// - `author`, `footer`, `image`, `provider`, `thumbnail` and `video` fields
 ///   are flattened, making this struct easier to cache
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedEmbed {
     pub id: Id<GenericMarker>,
     pub message_id: Id<MessageMarker>,
@@ -171,6 +173,7 @@ impl CachedEmbed {
 /// - `message_id` field is added, making it possible to return a message's
 ///   attachments
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedAttachment {
     pub message_id: Id<MessageMarker>,
     pub content_type: Option<String>,
@@ -223,6 +226,7 @@ impl CachedAttachment {
 /// - `member`, `reactions`, `attachments`, `embeds` and `sticker_items` fields
 ///   are removed, since they are cached separately
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedMessage {
     pub activity_type: Option<MessageActivityType>,
     pub activity_party_id: Option<String>,

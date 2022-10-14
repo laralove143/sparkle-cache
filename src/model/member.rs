@@ -23,6 +23,7 @@ use twilight_model::{
 /// - `email` and `verified` fields are removed, as they're only sent in some
 ///   HTTP endpoints
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedMember {
     pub guild_avatar: Option<ImageHash>,
     pub communication_disabled_until: Option<Timestamp>,

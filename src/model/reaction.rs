@@ -15,6 +15,7 @@ use twilight_model::{
 /// - `emoji` field is changed to a string that is either the ID or the name of
 ///   the emoji
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "tests", derive(PartialEq, Eq))]
 pub struct CachedReaction {
     pub channel_id: Id<ChannelMarker>,
     pub emoji: String,

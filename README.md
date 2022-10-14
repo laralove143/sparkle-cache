@@ -12,11 +12,11 @@ out of the box
 
 ## Incompleteness
 
-The cache itself doesn't have access to the Discord API methods, it's on the to-do list to add support for data that
-requires API methods.
+Only the data from events are cached, though it's on the to-do list to add support for data that requires API methods
 
-This means these data can't be cached for now:
+This means this data can't be cached for now:
 
+- Private channels
 - Bans
 - Auto moderation rules
 - Integrations
@@ -28,6 +28,24 @@ This means these data can't be cached for now:
 ## Support for libraries other than Twilight
 
 This doesn't depend tightly on Twilight, you can easily fork this and change the Twilight models used in it
+
+## Features
+
+### Tests
+
+Enables the testing module, it's intended for libraries implementing traits in this library, and it should be enabled
+only under `[dev-dependencies]`, for example
+
+```toml
+[package]
+name = "sparkle-cache-some-backend"
+[dev-dependencies]
+sparkle-cache = { version = "x", features = ["tests"] }
+[dependencies]
+sparkle-cache = "x"
+```
+
+If the test error is related to this crate, please create an issue
 
 ## Your help is needed
 

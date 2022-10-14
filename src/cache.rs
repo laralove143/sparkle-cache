@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 pub use error::Error;
 use twilight_model::{
-    channel::{
-        permission_overwrite::PermissionOverwrite, Channel, ChannelType, ReactionType,
-        StageInstance,
-    },
+    channel::{permission_overwrite::PermissionOverwrite, Channel, ReactionType, StageInstance},
     gateway::event::Event,
     guild::Permissions,
     id::{
@@ -31,12 +28,9 @@ use crate::{
 #[allow(clippy::std_instead_of_core)]
 mod error {
     use thiserror::Error;
-    use twilight_model::{
-        channel::Channel,
-        id::{
-            marker::{ChannelMarker, GuildMarker, RoleMarker, UserMarker},
-            Id,
-        },
+    use twilight_model::id::{
+        marker::{ChannelMarker, GuildMarker, RoleMarker, UserMarker},
+        Id,
     };
 
     use crate::model::{CachedChannel, CachedMember};
@@ -47,9 +41,6 @@ mod error {
         /// An error was returned by the backend
         #[error("An error was returned by the backend:\n{0}")]
         Backend(E),
-        /// The DM channel doesn't have any recipients other than the bot itself
-        #[error("The DM channel doesn't have any recipients other than the bot itself:\n{0:?}")]
-        PrivateChannelMissingRecipient(Box<Channel>),
         /// The current user isn't in the cache
         #[error("The current user isn't in the cache")]
         CurrentUserMissing,
@@ -577,15 +568,6 @@ pub trait Cache: Backend {
         channel_id: Id<ChannelMarker>,
     ) -> Result<Vec<CachedPermissionOverwrite>, Error<Self::Error>>;
 
-    /// Get a DM channel's ID by its recipient's ID
-    ///
-    /// Since DM channels can't be deleted consistently and efficiently, you
-    /// should make sure the bot shares a guild with the recipient
-    async fn private_channel(
-        &self,
-        recipient_id: Id<UserMarker>,
-    ) -> Result<Option<Id<ChannelMarker>>, Error<Self::Error>>;
-
     /// Get a cached message by its ID
     ///
     /// The returned message doesn't contain embeds, attachments, reactions or
@@ -692,23 +674,17 @@ pub trait Cache: Backend {
     /// [`cache::Error::PrivateChannelMissingRecipient`]
     #[doc(hidden)]
     async fn add_channel(&self, channel: &Channel) -> Result<(), Error<Self::Error>> {
-        if channel.kind == ChannelType::Private {
-            let recipient_user_id = self.private_channel_recipient(channel).await?;
-            self.upsert_private_channel(channel.id, recipient_user_id)
-                .await?;
-        } else {
-            for overwrite in channel
-                .permission_overwrites
-                .as_ref()
-                .unwrap_or(&Vec::new())
-            {
-                self.upsert_permission_overwrite(
-                    CachedPermissionOverwrite::from_permission_overwrite(overwrite, channel.id),
-                )
-                .await?;
-            }
-            self.upsert_channel(CachedChannel::from(channel)).await?;
+        for overwrite in channel
+            .permission_overwrites
+            .as_ref()
+            .unwrap_or(&Vec::new())
+        {
+            self.upsert_permission_overwrite(CachedPermissionOverwrite::from_permission_overwrite(
+                overwrite, channel.id,
+            ))
+            .await?;
         }
+        self.upsert_channel(CachedChannel::from(channel)).await?;
 
         Ok(())
     }
@@ -748,26 +724,5 @@ pub trait Cache: Backend {
         self.delete_message_stickers(message_id).await?;
         self.delete_message(message_id).await?;
         Ok(())
-    }
-
-    /// Given a [`twilight_model::channel::ChannelType::Private`] returns the
-    /// first recipient's ID that's not the current user
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::PrivateChannelMissingRecipient`]
-    #[doc(hidden)]
-    async fn private_channel_recipient(
-        &self,
-        channel: &Channel,
-    ) -> Result<Id<UserMarker>, Error<Self::Error>> {
-        let current_user_id = self.current_user().await?.id;
-        let recipient_user_id = channel
-            .recipients
-            .as_ref()
-            .and_then(|recipients| recipients.iter().find(|user| user.id == current_user_id))
-            .ok_or_else(|| Error::PrivateChannelMissingRecipient(Box::new(channel.clone())))?
-            .id;
-        Ok(recipient_user_id)
     }
 }

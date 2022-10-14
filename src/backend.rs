@@ -134,15 +134,6 @@ pub trait Backend {
         channel_id: Id<ChannelMarker>,
     ) -> Result<(), Self::Error>;
 
-    /// Add a DM channel to the cache
-    ///
-    /// Both of the IDs in this type are unique
-    async fn upsert_private_channel(
-        &self,
-        channel_id: Id<ChannelMarker>,
-        user_id: Id<UserMarker>,
-    ) -> Result<(), Self::Error>;
-
     /// Add or replace a message in the cache
     async fn upsert_message(&self, message: CachedMessage) -> Result<(), Self::Error>;
 

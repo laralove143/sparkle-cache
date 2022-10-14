@@ -1,4 +1,7 @@
+#![allow(clippy::std_instead_of_core)]
+
 use core::fmt::Display;
+use std::error::Error;
 
 use async_trait::async_trait;
 use twilight_model::{
@@ -98,7 +101,7 @@ impl<E: Display + Send> From<E> for cache::Error<E> {
 #[async_trait]
 pub trait Backend {
     /// The error type the backend returns, for example `sqlx::Error`
-    type Error: Display + Send;
+    type Error: Error + Send + Sync + 'static;
 
     /// Set or replace the current user information of the bot
     async fn set_current_user(&self, current_user: CurrentUser) -> Result<(), Self::Error>;

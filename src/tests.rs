@@ -160,10 +160,12 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         http.create_guild_sticker(
             guild.id,
-            "testing_sticker",
             "testing sticker",
-            "testing sticker tags",
-            IMAGE_HASH.as_bytes(),
+            "testing sticker description",
+            "testing,sticker,tags",
+            IMAGE_HASH
+                .trim_start_matches("data:image/png;base64,")
+                .as_bytes(),
         )?
         .exec()
         .await?

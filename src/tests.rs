@@ -66,7 +66,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// - Make sure the testing bot is in less than 10 guilds
     /// - Make sure not to edit the testing guild in any way, including sending
     ///   messages or adding members in it
-    #[allow(rust_2021_incompatible_closure_captures)]
+    #[allow(rust_2021_incompatible_closure_captures, clippy::too_many_lines)]
     pub async fn new(cache: T, http: Client) -> Result<Self, anyhow::Error> {
         if let Some(guild) = http
             .current_user_guilds()
@@ -138,11 +138,15 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .icon(IMAGE_HASH)
             .add_role(everyone_role)
             .add_role(role)
-            .channels(vec![GuildChannelFields::Category(category)])?
             .afk_channel_id(voice_channel.id)
             .afk_timeout(60)
             .system_channel_id(text_channel.id)
             .system_channel_flags(SystemChannelFlags::SUPPRESS_PREMIUM_SUBSCRIPTIONS)
+            .channels(vec![
+                GuildChannelFields::Category(category),
+                GuildChannelFields::Text(text_channel),
+                GuildChannelFields::Voice(voice_channel),
+            ])?
             .exec()
             .await?
             .model()

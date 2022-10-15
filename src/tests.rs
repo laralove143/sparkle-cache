@@ -140,7 +140,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .add_role(role)
             .channels(vec![GuildChannelFields::Category(category)])?
             .afk_channel_id(voice_channel.id)
-            .afk_timeout(100)
+            .afk_timeout(60)
             .system_channel_id(text_channel.id)
             .system_channel_flags(SystemChannelFlags::SUPPRESS_PREMIUM_SUBSCRIPTIONS)
             .exec()

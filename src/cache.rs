@@ -222,7 +222,7 @@ pub trait Cache: Backend {
             }
             Event::MemberUpdate(member) => {
                 if let Some(mut cached_member) =
-                    self.member(member.guild_id, member.user.id).await?
+                    self.member(member.user.id, member.guild_id).await?
                 {
                     cached_member.update(member);
                     self.upsert_member(cached_member).await?;
@@ -421,7 +421,7 @@ pub trait Cache: Backend {
         guild_id: Id<GuildMarker>,
     ) -> Result<Permissions, Error<Self::Error>> {
         let current_user_id = self.current_user().await?.id;
-        self.guild_permissions(guild_id, current_user_id).await
+        self.guild_permissions(current_user_id, guild_id).await
     }
 
     /// Get the permissions of the given user and channel
@@ -448,7 +448,7 @@ pub trait Cache: Backend {
         let guild_id = channel
             .guild_id
             .ok_or_else(|| Error::PermissionsChannelNotInGuild(Box::new(channel.clone())))?;
-        self.permissions(guild_id, user_id, Some(channel)).await
+        self.permissions(user_id, guild_id, Some(channel)).await
     }
 
     /// Get the permissions of the given user and guild
@@ -463,10 +463,10 @@ pub trait Cache: Backend {
     /// [`Error::MemberBadTimeoutTimestamp`]
     async fn guild_permissions(
         &self,
-        guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
     ) -> Result<Permissions, Error<Self::Error>> {
-        self.permissions(guild_id, user_id, None).await
+        self.permissions(user_id, guild_id, None).await
     }
 
     /// Get the permissions with the given parameters
@@ -482,8 +482,8 @@ pub trait Cache: Backend {
     #[doc(hidden)]
     async fn permissions(
         &self,
-        guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
         cached_channel: Option<CachedChannel>,
     ) -> Result<Permissions, Error<Self::Error>> {
         let guild = self
@@ -524,7 +524,7 @@ pub trait Cache: Backend {
         };
 
         let member = self
-            .member(guild_id, user_id)
+            .member(user_id, guild_id)
             .await?
             .ok_or(Error::PermissionsMemberMissing { user_id, guild_id })?;
         if !permissions.contains(Permissions::ADMINISTRATOR)
@@ -556,17 +556,17 @@ pub trait Cache: Backend {
         channel_id: Id<ChannelMarker>,
     ) -> Result<Option<CachedChannel>, Error<Self::Error>>;
 
-    /// Get a guild's channels and threads by its ID
-    async fn guild_channels(
-        &self,
-        guild_id: Id<GuildMarker>,
-    ) -> Result<Vec<CachedChannel>, Error<Self::Error>>;
-
     /// Get a cached permission overwrites of a channel by its ID
     async fn permission_overwrites(
         &self,
         channel_id: Id<ChannelMarker>,
     ) -> Result<Vec<CachedPermissionOverwrite>, Error<Self::Error>>;
+
+    /// Get a guild's channels and threads by its ID
+    async fn guild_channels(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedChannel>, Error<Self::Error>>;
 
     /// Get a cached message by its ID
     ///
@@ -624,8 +624,8 @@ pub trait Cache: Backend {
     /// Get a cached member by its guild ID and user ID
     async fn member(
         &self,
-        guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
+        guild_id: Id<GuildMarker>,
     ) -> Result<Option<CachedMember>, Error<Self::Error>>;
 
     /// Get cached roles of a member by their ID

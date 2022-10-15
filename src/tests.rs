@@ -13,7 +13,6 @@ use twilight_http::{
 use twilight_model::{
     channel::{
         embed::{Embed, EmbedField},
-        message::Sticker,
         ChannelType, ReactionType,
     },
     guild::{
@@ -31,7 +30,6 @@ use crate::{
     model::{
         CachedAttachment, CachedChannel, CachedEmbed, CachedEmbedField, CachedEmoji, CachedGuild,
         CachedMember, CachedMessage, CachedPermissionOverwrite, CachedReaction, CachedRole,
-        CachedSticker,
     },
     Cache,
 };
@@ -158,19 +156,19 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .model()
             .await?;
 
-        http.create_guild_sticker(
-            guild.id,
-            "testing sticker",
-            "testing sticker description",
-            "testing,sticker,tags",
-            IMAGE_HASH
-                .trim_start_matches("data:image/png;base64,")
-                .as_bytes(),
-        )?
-        .exec()
-        .await?
-        .model()
-        .await?;
+        // http.create_guild_sticker(
+        //     guild.id,
+        //     "testing sticker",
+        //     "testing sticker description",
+        //     "testing,sticker,tags",
+        //     IMAGE_HASH
+        //         .trim_start_matches("data:image/png;base64,")
+        //         .as_bytes(),
+        // )?
+        // .exec()
+        // .await?
+        // .model()
+        // .await?;
 
         Ok(Self {
             cache,
@@ -350,7 +348,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
                     id: 0,
                 },
             ])?
-            .sticker_ids(&[self.testing_guild_stickers().await?.first().unwrap().id])?
+            // .sticker_ids(&[self.testing_guild_stickers().await?.first().unwrap().id])?
             .exec()
             .await?
             .model()
@@ -488,27 +486,28 @@ impl<T: Cache + Send + Sync> Tester<T> {
         Ok(())
     }
 
-    /// Does tests related to caching stickers
-    pub async fn stickers(&self) -> Result<(), anyhow::Error> {
-        self.assert_stickers_eq().await?;
-
-        let first_sticker_id = self.testing_guild_stickers().await?.first().unwrap().id;
-
-        self.http
-            .update_guild_sticker(self.test_guild_id, first_sticker_id)
-            .name("testing_sticker_new")?
-            .exec()
-            .await?;
-        self.assert_stickers_eq().await?;
-
-        self.http
-            .delete_guild_sticker(self.test_guild_id, first_sticker_id)
-            .exec()
-            .await?;
-        self.assert_stickers_eq().await?;
-
-        Ok(())
-    }
+    // /// Does tests related to caching stickers
+    // pub async fn stickers(&self) -> Result<(), anyhow::Error> {
+    //     self.assert_stickers_eq().await?;
+    //
+    //     let first_sticker_id =
+    // self.testing_guild_stickers().await?.first().unwrap().id;
+    //
+    //     self.http
+    //         .update_guild_sticker(self.test_guild_id, first_sticker_id)
+    //         .name("testing_sticker_new")?
+    //         .exec()
+    //         .await?;
+    //     self.assert_stickers_eq().await?;
+    //
+    //     self.http
+    //         .delete_guild_sticker(self.test_guild_id, first_sticker_id)
+    //         .exec()
+    //         .await?;
+    //     self.assert_stickers_eq().await?;
+    //
+    //     Ok(())
+    // }
 
     /// Asserts that the cached channels and the channels in the testing guild
     /// are equal
@@ -758,28 +757,28 @@ impl<T: Cache + Send + Sync> Tester<T> {
         Ok(())
     }
 
-    /// Asserts that the cached stickers and the stickers in the testing guild
-    /// are equal
-    async fn assert_stickers_eq(&self) -> Result<(), anyhow::Error> {
-        let stickers = self.testing_guild_stickers().await?;
-        let mut cached_stickers = self.cache.guild_stickers(self.test_guild_id).await?;
-        assert_eq!(
-            stickers.iter().map(CachedSticker::from).collect::<Vec<_>>(),
-            cached_stickers
-        );
-
-        cached_stickers = vec![];
-        for sticker in &stickers {
-            cached_stickers.push(self.cache.sticker(sticker.id).await?.unwrap());
-        }
-
-        assert_eq!(
-            stickers.iter().map(CachedSticker::from).collect::<Vec<_>>(),
-            cached_stickers
-        );
-
-        Ok(())
-    }
+    // /// Asserts that the cached stickers and the stickers in the testing guild
+    // /// are equal
+    // async fn assert_stickers_eq(&self) -> Result<(), anyhow::Error> {
+    //     let stickers = self.testing_guild_stickers().await?;
+    //     let mut cached_stickers =
+    // self.cache.guild_stickers(self.test_guild_id).await?;     assert_eq!(
+    //         stickers.iter().map(CachedSticker::from).collect::<Vec<_>>(),
+    //         cached_stickers
+    //     );
+    //
+    //     cached_stickers = vec![];
+    //     for sticker in &stickers {
+    //         cached_stickers.push(self.cache.sticker(sticker.id).await?.unwrap());
+    //     }
+    //
+    //     assert_eq!(
+    //         stickers.iter().map(CachedSticker::from).collect::<Vec<_>>(),
+    //         cached_stickers
+    //     );
+    //
+    //     Ok(())
+    // }
 
     /// Returns the channels in the testing guild
     async fn testing_guild_channels(&self) -> Result<Vec<CachedChannel>, anyhow::Error> {
@@ -824,14 +823,14 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .await?)
     }
 
-    /// Returns the stickers in the testing guild
-    async fn testing_guild_stickers(&self) -> Result<Vec<Sticker>, anyhow::Error> {
-        Ok(self
-            .http
-            .guild_stickers(self.test_guild_id)
-            .exec()
-            .await?
-            .models()
-            .await?)
-    }
+    // /// Returns the stickers in the testing guild
+    // async fn testing_guild_stickers(&self) -> Result<Vec<Sticker>, anyhow::Error>
+    // {     Ok(self
+    //         .http
+    //         .guild_stickers(self.test_guild_id)
+    //         .exec()
+    //         .await?
+    //         .models()
+    //         .await?)
+    // }
 }

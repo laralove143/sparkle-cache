@@ -58,7 +58,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// Deletes the testing guild if it exists and creates a new one to return
     /// the tester
     ///
-    /// /// # Warnings
+    /// # Warnings
     /// - The tests here are not cheap, they will make many requests to ensure
     ///   the cache is handling events correctly
     /// - It will update the bot's user info, make sure not to update it
@@ -122,7 +122,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
             topic: Some("first text".to_owned()),
         };
         let voice_channel = VoiceFields {
-            bitrate: Some(1024),
+            bitrate: Some(8000),
             id: Id::new(3),
             kind: ChannelType::GuildVoice,
             name: "first_voice".to_owned(),

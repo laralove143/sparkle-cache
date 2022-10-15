@@ -610,6 +610,17 @@ pub trait Cache: Backend {
         message_id: Id<MessageMarker>,
     ) -> Result<Vec<CachedSticker>, Error<Self::Error>>;
 
+    /// Get a channel's most recent `limit` messages by its ID
+    ///
+    /// A limit of 0 means to return all messages
+    ///
+    /// The messages are ordered from most recent to least recent
+    async fn channel_messages(
+        &self,
+        channel_id: Id<ChannelMarker>,
+        limit: u16,
+    ) -> Result<Vec<CachedMessage>, Error<Self::Error>>;
+
     /// Get a cached member by its guild ID and user ID
     async fn member(
         &self,
@@ -636,6 +647,12 @@ pub trait Cache: Backend {
         user_id: Id<UserMarker>,
     ) -> Result<Vec<CachedActivity>, Error<Self::Error>>;
 
+    /// Get a guild's members by its ID
+    async fn guild_members(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedMember>, Error<Self::Error>>;
+
     /// Get a cached guild by its ID
     async fn guild(
         &self,
@@ -646,17 +663,35 @@ pub trait Cache: Backend {
     async fn role(&self, role_id: Id<RoleMarker>)
         -> Result<Option<CachedRole>, Error<Self::Error>>;
 
+    /// Get a guild's roles by its ID
+    async fn guild_roles(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedRole>, Error<Self::Error>>;
+
     /// Get a cached emoji by its ID
     async fn emoji(
         &self,
         emoji_id: Id<EmojiMarker>,
     ) -> Result<Option<CachedEmoji>, Error<Self::Error>>;
 
+    /// Get a guild's emojis by its ID
+    async fn guild_emojis(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedEmoji>, Error<Self::Error>>;
+
     /// Get a cached sticker by its ID
     async fn sticker(
         &self,
         sticker_id: Id<StickerMarker>,
     ) -> Result<Option<CachedSticker>, Error<Self::Error>>;
+
+    /// Get a guild's stickers by its ID
+    async fn guild_stickers(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<Vec<CachedSticker>, Error<Self::Error>>;
 
     /// Get a cached stage instance by its ID
     async fn stage_instance(

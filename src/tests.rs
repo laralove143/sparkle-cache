@@ -552,15 +552,21 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// Asserts that the cached messages and the messages in the testing guild
     /// are equal
     async fn assert_messages_eq(&self) -> Result<(), anyhow::Error> {
+        let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
         let messages = self
             .http
-            .channel_messages(self.testing_guild_channels().await?.first().unwrap().id)
+            .channel_messages(first_channel_id)
             .exec()
             .await?
             .models()
             .await?;
+        let mut cached_messages = self.cache.channel_messages(first_channel_id, 0).await?;
+        assert_eq!(
+            messages.iter().map(CachedMessage::from).collect::<Vec<_>>(),
+            cached_messages
+        );
 
-        let mut cached_messages = vec![];
+        cached_messages = vec![];
         for message in &messages {
             cached_messages.push(self.cache.message(message.id).await?.unwrap());
 
@@ -623,10 +629,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
         }
 
         assert_eq!(
-            messages
-                .into_iter()
-                .map(|message| CachedMessage::from(&message))
-                .collect::<Vec<_>>(),
+            messages.iter().map(CachedMessage::from).collect::<Vec<_>>(),
             cached_messages
         );
 
@@ -644,12 +647,17 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .models()
             .await?;
         let roles = self.testing_guild_roles().await?;
+        let mut cached_members = self.cache.guild_members(self.test_guild_id).await?;
+        assert_eq!(
+            members.iter().map(CachedMember::from).collect::<Vec<_>>(),
+            cached_members
+        );
 
-        let mut cached_members = vec![];
+        cached_members = vec![];
         for member in &members {
             cached_members.push(
                 self.cache
-                    .member(self.test_guild_id, member.user.id)
+                    .member(member.user.id, self.test_guild_id)
                     .await?
                     .unwrap(),
             );
@@ -701,9 +709,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// Asserts that the cached roles and the roles in the testing guild are
     /// equal
     async fn assert_roles_eq(&self) -> Result<(), anyhow::Error> {
-        let roles: Vec<_> = self.testing_guild_roles().await?;
+        let roles = self.testing_guild_roles().await?;
+        let mut cached_roles = self.cache.guild_roles(self.test_guild_id).await?;
+        assert_eq!(roles, cached_roles);
 
-        let mut cached_roles = vec![];
+        cached_roles = vec![];
         for role in &roles {
             cached_roles.push(self.cache.role(role.id).await?.unwrap());
         }
@@ -717,8 +727,16 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// equal
     async fn assert_emojis_eq(&self) -> Result<(), anyhow::Error> {
         let emojis = self.testing_guild_emojis().await?;
+        let mut cached_emojis = self.cache.guild_emojis(self.test_guild_id).await?;
+        assert_eq!(
+            emojis
+                .iter()
+                .map(|emoji| CachedEmoji::from_emoji(emoji, self.test_guild_id))
+                .collect::<Vec<_>>(),
+            cached_emojis
+        );
 
-        let mut cached_emojis = vec![];
+        cached_emojis = vec![];
         for emoji in &emojis {
             cached_emojis.push(self.cache.emoji(emoji.id).await?.unwrap());
         }
@@ -738,8 +756,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// are equal
     async fn assert_stickers_eq(&self) -> Result<(), anyhow::Error> {
         let stickers = self.testing_guild_stickers().await?;
+        let mut cached_stickers = self.cache.guild_stickers(self.test_guild_id).await?;
+        assert_eq!(
+            stickers.iter().map(CachedSticker::from).collect::<Vec<_>>(),
+            cached_stickers
+        );
 
-        let mut cached_stickers = vec![];
+        cached_stickers = vec![];
         for sticker in &stickers {
             cached_stickers.push(self.cache.sticker(sticker.id).await?.unwrap());
         }

@@ -1,6 +1,6 @@
 [package]
 name = "sparkle-cache"
-version = "0.13.9"
+version = "0.13.10"
 authors = ["lara <laralove143@icloud.com>"]
 edition = "2021"
 description = "A backend-agnostic Discord cache implementation for the Twilight ecosystem."

@@ -43,16 +43,16 @@ const IMAGE_HASH: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACg
 
 /// Struct that runs the tests
 #[derive(Debug)]
-pub struct Tester<T: Cache + Send + Sync> {
+pub struct Tester<'cache, T: Cache + Send + Sync> {
     /// The cache to test
-    cache: T,
+    cache: &'cache T,
     /// The HTTP to create models to run tests against
     http: Client,
     /// The ID of the guild to run tests against
     test_guild_id: Id<GuildMarker>,
 }
 
-impl<T: Cache + Send + Sync> Tester<T> {
+impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     /// Deletes the testing guild if it exists and creates a new one to return
     /// the tester
     ///
@@ -65,7 +65,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// - Make sure not to edit the testing guild in any way, including sending
     ///   messages or adding members in it
     #[allow(rust_2021_incompatible_closure_captures, clippy::too_many_lines)]
-    pub async fn new(cache: T, http: Client) -> Result<Self, anyhow::Error> {
+    pub async fn new(cache: &'cache T, http: Client) -> Result<Tester<'cache, T>, anyhow::Error> {
         if let Some(guild) = http
             .current_user_guilds()
             .exec()

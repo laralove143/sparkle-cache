@@ -115,12 +115,6 @@ pub trait Cache: Backend {
     /// # Errors
     ///
     /// Returns the error the backend might return
-    ///
-    /// On [`twilight_model::gateway::event::Event::ChannelCreate`],
-    /// [`twilight_model::gateway::event::Event::ChannelUpdate`] and
-    /// [`twilight_model::gateway::event::Event::ChannelDelete`], events when
-    /// the channel is a DM channel, might return
-    /// [`Error::PrivateChannelMissingRecipient`]
     #[allow(clippy::too_many_lines)]
     async fn update(&self, event: &Event) -> Result<(), Error<Self::Error>> {
         match event {

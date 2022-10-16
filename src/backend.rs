@@ -36,6 +36,11 @@ impl<E: Display + Send> From<E> for cache::Error<E> {
 /// This is for adding support for a backend, users of the cache itself only
 /// need the methods in [`super::Cache`]
 ///
+/// # Persistence
+///
+/// All of the data in the cache should be cleared every time the bot restarts
+/// so that the cache can be rebuilt without the now-invalid data
+///
 /// # Uniqueness
 ///
 /// Unless documented otherwise, only the main `id` field is unique, if there's

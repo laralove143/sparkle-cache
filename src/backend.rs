@@ -319,6 +319,8 @@ pub trait Backend {
 
     /// Add or replace a sticker in the cache
     ///
+    /// The sticker ID is unique only if the sticker's message ID is `None`
+    ///
     /// When updating stickers, make sure not to update the message ID field
     async fn upsert_sticker(&self, sticker: CachedSticker) -> Result<(), Self::Error>;
 

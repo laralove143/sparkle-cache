@@ -1,5 +1,9 @@
 #![allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
 
+use std::time::Instant;
+
+use futures::StreamExt;
+use twilight_gateway::{shard::Events, Shard};
 use twilight_http::{
     self,
     request::{
@@ -13,10 +17,11 @@ use twilight_http::{
 use twilight_model::{
     channel::{
         embed::{Embed, EmbedField},
-        ChannelType, ReactionType,
+        Channel, ChannelType, ReactionType,
     },
+    gateway::Intents,
     guild::{
-        DefaultMessageNotificationLevel, Emoji, ExplicitContentFilter, Permissions,
+        DefaultMessageNotificationLevel, Emoji, ExplicitContentFilter, Permissions, Role,
         SystemChannelFlags,
     },
     http::{
@@ -43,29 +48,35 @@ const IMAGE_HASH: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACg
 
 /// Struct that runs the tests
 #[derive(Debug)]
-pub struct Tester<'cache, T: Cache + Send + Sync> {
+pub struct Tester<T: Cache + Send + Sync> {
     /// The cache to test
-    cache: &'cache T,
+    cache: T,
+    /// The events to update the cache with
+    events: Events,
     /// The HTTP to create models to run tests against
     http: Client,
     /// The ID of the guild to run tests against
     test_guild_id: Id<GuildMarker>,
 }
 
-impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
+impl<T: Cache + Send + Sync> Tester<T> {
     /// Deletes the testing guild if it exists and creates a new one to return
     /// the tester
     ///
     /// # Warnings
     /// - The tests here are not cheap, they will make many requests to ensure
     ///   the cache is handling events correctly
-    /// - It will update the bot's user info, make sure not to update it
-    ///   manually
+    /// - Make sure the testing bot has all privileged intents
     /// - Make sure the testing bot is in less than 10 guilds
     /// - Make sure not to edit the testing guild in any way, including sending
     ///   messages or adding members in it
     #[allow(rust_2021_incompatible_closure_captures, clippy::too_many_lines)]
-    pub async fn new(cache: &'cache T, http: Client) -> Result<Tester<'cache, T>, anyhow::Error> {
+    pub async fn new(cache: T, token: &str) -> Result<Self, anyhow::Error> {
+        let (shard, events) = Shard::new(token.to_owned(), Intents::all());
+        shard.start().await?;
+
+        let http = Client::new(token.to_owned());
+
         if let Some(guild) = http
             .current_user_guilds()
             .exec()
@@ -170,25 +181,29 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
         // .model()
         // .await?;
 
-        Ok(Self {
+        let mut tester = Self {
             cache,
             http,
+            events,
             test_guild_id: guild.id,
-        })
+        };
+
+        tester.update().await?;
+
+        Ok(tester)
     }
 
     /// Does tests related to caching the current user
-    pub async fn current_user(&self) -> Result<(), anyhow::Error> {
-        let current_user = self.http.current_user().exec().await?.model().await?;
-        assert_eq!(self.cache.current_user().await?, current_user);
+    pub async fn current_user(&mut self) -> Result<(), anyhow::Error> {
+        self.assert_current_users_eq().await?;
 
+        let current_user = self.cache.current_user().await?;
         let name = if current_user.name == NAME {
             format!("{NAME} New")
         } else {
             NAME.to_owned()
         };
-        let updated_user = self
-            .http
+        self.http
             .update_current_user()
             .avatar(if current_user.avatar.is_some() {
                 None
@@ -200,14 +215,13 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
             .await?
             .model()
             .await?;
-        assert_eq!(self.cache.current_user().await?.avatar, updated_user.avatar);
-        assert_eq!(self.cache.current_user().await?.name, updated_user.name);
+        self.assert_current_users_eq().await?;
 
         Ok(())
     }
 
     /// Does tests related to caching channels
-    pub async fn channels(&self) -> Result<(), anyhow::Error> {
+    pub async fn channels(&mut self) -> Result<(), anyhow::Error> {
         self.assert_channels_eq().await?;
 
         let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
@@ -235,7 +249,7 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     }
 
     /// Does tests related to caching permission overwrites
-    pub async fn permission_overwrites(&self) -> Result<(), anyhow::Error> {
+    pub async fn permission_overwrites(&mut self) -> Result<(), anyhow::Error> {
         self.assert_permission_overwrites_eq().await?;
 
         let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
@@ -282,7 +296,7 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     /// Does tests related to caching messages
     #[allow(clippy::too_many_lines)]
-    pub async fn messages(&self) -> Result<(), anyhow::Error> {
+    pub async fn messages(&mut self) -> Result<(), anyhow::Error> {
         self.assert_messages_eq().await?;
 
         let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
@@ -392,7 +406,7 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     }
 
     /// Does tests related to caching members
-    pub async fn members(&self) -> Result<(), anyhow::Error> {
+    pub async fn members(&mut self) -> Result<(), anyhow::Error> {
         self.assert_members_eq().await?;
 
         let first_role_id = self.testing_guild_roles().await?.first().unwrap().id;
@@ -414,7 +428,7 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     }
 
     /// Does tests related to the fields of [`crate::model::CachedGuild`]
-    pub async fn guilds(&self) -> Result<(), anyhow::Error> {
+    pub async fn guilds(&mut self) -> Result<(), anyhow::Error> {
         self.assert_guilds_eq().await?;
 
         self.http
@@ -433,7 +447,7 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     }
 
     /// Does tests related to caching roles
-    pub async fn roles(&self) -> Result<(), anyhow::Error> {
+    pub async fn roles(&mut self) -> Result<(), anyhow::Error> {
         self.assert_roles_eq().await?;
 
         let first_role_id = self.testing_guild_roles().await?.first().unwrap().id;
@@ -465,7 +479,7 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     }
 
     /// Does tests related to caching emojis
-    pub async fn emojis(&self) -> Result<(), anyhow::Error> {
+    pub async fn emojis(&mut self) -> Result<(), anyhow::Error> {
         self.assert_emojis_eq().await?;
 
         let first_emoji_id = self.testing_guild_emojis().await?.first().unwrap().id;
@@ -482,6 +496,21 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
             .exec()
             .await?;
         self.assert_emojis_eq().await?;
+
+        Ok(())
+    }
+
+    /// Updates the cache with the pending events for 5 seconds
+    async fn update(&mut self) -> Result<(), anyhow::Error> {
+        let started = Instant::now();
+
+        while let Some(event) = self.events.next().await {
+            self.cache.update(&event).await?;
+
+            if started.elapsed().as_secs() > 5 {
+                return Ok(());
+            }
+        }
 
         Ok(())
     }
@@ -509,10 +538,27 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     //     Ok(())
     // }
 
+    /// Asserts that the cached current user and the current user are equal
+    async fn assert_current_users_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
+        let current_user = self.http.current_user().exec().await?.model().await?;
+        assert_eq!(self.cache.current_user().await?, current_user);
+
+        Ok(())
+    }
+
     /// Asserts that the cached channels and the channels in the testing guild
     /// are equal
-    async fn assert_channels_eq(&self) -> Result<(), anyhow::Error> {
-        let channels: Vec<_> = self.testing_guild_channels().await?;
+    async fn assert_channels_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
+        let channels: Vec<_> = self
+            .testing_guild_channels()
+            .await?
+            .iter()
+            .map(CachedChannel::from)
+            .collect();
         let mut cached_channels = self.cache.guild_channels(self.test_guild_id).await?;
         assert_eq!(channels, cached_channels);
 
@@ -527,15 +573,10 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     /// Asserts that the cached channels and the channels in the testing guild
     /// are equal
-    async fn assert_permission_overwrites_eq(&self) -> Result<(), anyhow::Error> {
-        let first_channel = self
-            .http
-            .guild_channels(self.test_guild_id)
-            .exec()
-            .await?
-            .models()
-            .await?
-            .remove(0);
+    async fn assert_permission_overwrites_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
+        let first_channel = self.testing_guild_channels().await?.remove(0);
 
         let permission_overwrites: Vec<_> = first_channel
             .permission_overwrites
@@ -556,7 +597,9 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     /// Asserts that the cached messages and the messages in the testing guild
     /// are equal
-    async fn assert_messages_eq(&self) -> Result<(), anyhow::Error> {
+    async fn assert_messages_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
         let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
         let messages = self
             .http
@@ -643,7 +686,9 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     /// Asserts that the cached members and the members in the testing guild are
     /// equal
-    async fn assert_members_eq(&self) -> Result<(), anyhow::Error> {
+    async fn assert_members_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
         let members = self
             .http
             .guild_members(self.test_guild_id)
@@ -678,7 +723,10 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
                 );
             }
             assert_eq!(
-                member_roles,
+                member_roles
+                    .into_iter()
+                    .map(|role| CachedRole::from_role(role, self.test_guild_id))
+                    .collect::<Vec<_>>(),
                 self.cache
                     .member_roles(member.user.id, self.test_guild_id)
                     .await?
@@ -694,7 +742,9 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     }
 
     /// Asserts that the cached testing guild and the testing guild are equal
-    async fn assert_guilds_eq(&self) -> Result<(), anyhow::Error> {
+    async fn assert_guilds_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
         let guild = self
             .http
             .guild(self.test_guild_id)
@@ -713,8 +763,15 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     /// Asserts that the cached roles and the roles in the testing guild are
     /// equal
-    async fn assert_roles_eq(&self) -> Result<(), anyhow::Error> {
-        let roles = self.testing_guild_roles().await?;
+    async fn assert_roles_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
+        let roles: Vec<_> = self
+            .testing_guild_roles()
+            .await?
+            .into_iter()
+            .map(|role| CachedRole::from_role(role, self.test_guild_id))
+            .collect();
         let mut cached_roles = self.cache.guild_roles(self.test_guild_id).await?;
         assert_eq!(roles, cached_roles);
 
@@ -730,7 +787,9 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     /// Asserts that the cached emojis and the emojis in the testing guild are
     /// equal
-    async fn assert_emojis_eq(&self) -> Result<(), anyhow::Error> {
+    async fn assert_emojis_eq(&mut self) -> Result<(), anyhow::Error> {
+        self.update().await?;
+
         let emojis = self.testing_guild_emojis().await?;
         let mut cached_emojis = self.cache.guild_emojis(self.test_guild_id).await?;
         assert_eq!(
@@ -759,7 +818,9 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
 
     // /// Asserts that the cached stickers and the stickers in the testing guild
     // /// are equal
-    // async fn assert_stickers_eq(&self) -> Result<(), anyhow::Error> {
+    // async fn assert_stickers_eq(&mut self) -> Result<(), anyhow::Error> {
+    //     self.update().await?;
+    //
     //     let stickers = self.testing_guild_stickers().await?;
     //     let mut cached_stickers =
     // self.cache.guild_stickers(self.test_guild_id).await?;     assert_eq!(
@@ -781,33 +842,27 @@ impl<'cache, T: Cache + Send + Sync> Tester<'cache, T> {
     // }
 
     /// Returns the channels in the testing guild
-    async fn testing_guild_channels(&self) -> Result<Vec<CachedChannel>, anyhow::Error> {
+    async fn testing_guild_channels(&self) -> Result<Vec<Channel>, anyhow::Error> {
         let channels = self
             .http
             .guild_channels(self.test_guild_id)
             .exec()
             .await?
             .models()
-            .await?
-            .into_iter()
-            .map(|channel| CachedChannel::from(&channel))
-            .collect();
+            .await?;
 
         Ok(channels)
     }
 
     /// Returns the roles in the testing guild
-    async fn testing_guild_roles(&self) -> Result<Vec<CachedRole>, anyhow::Error> {
+    async fn testing_guild_roles(&self) -> Result<Vec<Role>, anyhow::Error> {
         let roles: Vec<_> = self
             .http
             .roles(self.test_guild_id)
             .exec()
             .await?
             .models()
-            .await?
-            .into_iter()
-            .map(|role| CachedRole::from_role(role, self.test_guild_id))
-            .collect();
+            .await?;
 
         Ok(roles)
     }

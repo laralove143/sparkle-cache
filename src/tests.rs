@@ -542,10 +542,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
     async fn assert_current_users_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
-        let mut current_user = self.http.current_user().exec().await?.model().await?;
-        current_user.locale = None;
-        current_user.premium_type = None;
-        current_user.public_flags = None;
+        let current_user = self.http.current_user().exec().await?.model().await?;
         assert_eq!(self.cache.current_user().await?, current_user);
 
         Ok(())

@@ -695,13 +695,6 @@ pub trait Cache: Backend {
     ) -> Result<Option<StageInstance>, Error<Self::Error>>;
 
     /// Updates the cache with the channel
-    ///
-    /// # Errors
-    ///
-    /// Returns the error the backend might return
-    ///
-    /// When the channel is a DM channel, might return
-    /// [`cache::Error::PrivateChannelMissingRecipient`]
     #[doc(hidden)]
     async fn add_channel(&self, channel: &Channel) -> Result<(), Error<Self::Error>> {
         for overwrite in channel

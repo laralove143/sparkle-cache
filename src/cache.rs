@@ -151,6 +151,10 @@ pub trait Cache: Backend {
                 for sticker in &guild.stickers {
                     self.upsert_sticker(sticker.into()).await?;
                 }
+                for role in &guild.roles {
+                    self.upsert_role(CachedRole::from_role(role.clone(), guild.id))
+                        .await?;
+                }
                 for member in &guild.members {
                     self.add_member_roles(member.user.id, member.roles.clone())
                         .await?;
@@ -158,10 +162,6 @@ pub trait Cache: Backend {
                 }
                 for presence in &guild.presences {
                     self.upsert_presence(presence.into()).await?;
-                }
-                for role in &guild.roles {
-                    self.upsert_role(CachedRole::from_role(role.clone(), guild.id))
-                        .await?;
                 }
                 for stage in &guild.stage_instances {
                     self.upsert_stage_instance(stage.clone()).await?;

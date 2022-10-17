@@ -122,6 +122,8 @@ pub trait Cache: Backend {
                 self.add_channel(channel).await?;
             }
             Event::ChannelUpdate(channel) => {
+                self.delete_channel_permission_overwrites(channel.id)
+                    .await?;
                 self.add_channel(channel).await?;
             }
             Event::ChannelDelete(channel) => {
@@ -136,7 +138,6 @@ pub trait Cache: Backend {
                 self.add_channel(thread).await?;
             }
             Event::ThreadDelete(thread) => {
-                self.delete_channel_permission_overwrites(thread.id).await?;
                 self.delete_channel(thread.id).await?;
             }
             Event::GuildCreate(guild) => {

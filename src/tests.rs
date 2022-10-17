@@ -543,7 +543,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.update().await?;
 
         let current_user = self.http.current_user().exec().await?.model().await?;
-        assert_eq!(self.cache.current_user().await?, current_user);
+        let mut cached_current_user = self.cache.current_user().await?;
+        cached_current_user.locale = None;
+        cached_current_user.premium_type = None;
+        cached_current_user.public_flags = None;
+        assert_eq!(cached_current_user, current_user);
 
         Ok(())
     }

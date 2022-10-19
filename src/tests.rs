@@ -588,7 +588,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         cached_channels = vec![];
         for channel in &channels {
-            cached_channels.push(self.cache.channel(channel.id).await?.unwrap());
+            let mut cached_channel = self.cache.channel(channel.id).await?.unwrap();
+            if cached_channel.nsfw == Some(false) {
+                cached_channel.nsfw = None;
+            }
+            cached_channels.push(cached_channel);
         }
         assert_vecs_eq(&channels, &cached_channels);
 

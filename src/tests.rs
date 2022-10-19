@@ -563,8 +563,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
         let channels: Vec<_> = self
             .testing_guild_channels()
             .await?
-            .iter()
-            .map(CachedChannel::from)
+            .iter_mut()
+            .map(|channel| {
+                if channel.nsfw == Some(false) {
+                    channel.nsfw = None;
+                }
+                CachedChannel::from(&*channel)
+            })
             .collect();
         let mut cached_channels = self.cache.guild_channels(self.test_guild_id).await?;
         assert_eq!(channels, cached_channels);

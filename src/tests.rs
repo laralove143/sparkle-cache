@@ -254,6 +254,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.assert_permission_overwrites_eq().await?;
 
         let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
+        let first_role_id = self.testing_guild_roles().await?.first().unwrap().id;
 
         self.http
             .update_channel_permission(
@@ -261,24 +262,8 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 &PermissionOverwrite {
                     allow: Some(Permissions::ADD_REACTIONS),
                     deny: None,
-                    id: self.testing_guild_roles().await?.first().unwrap().id.cast(),
-                    kind: PermissionOverwriteType::Member,
-                },
-            )
-            .exec()
-            .await?;
-        self.assert_permission_overwrites_eq().await?;
-
-        let current_user_id = self.cache.current_user().await?.id;
-
-        self.http
-            .update_channel_permission(
-                first_channel_id,
-                &PermissionOverwrite {
-                    allow: Some(Permissions::ADD_REACTIONS),
-                    deny: None,
-                    id: current_user_id.cast(),
-                    kind: PermissionOverwriteType::Member,
+                    id: first_role_id.cast(),
+                    kind: PermissionOverwriteType::Role,
                 },
             )
             .exec()
@@ -287,7 +272,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         self.http
             .delete_channel_permission(first_channel_id)
-            .member(current_user_id)
+            .role(first_role_id.cast())
             .exec()
             .await?;
         self.assert_channels_eq().await?;

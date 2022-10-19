@@ -1,5 +1,6 @@
 #![allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
 
+use core::fmt::Debug;
 use std::time::Instant;
 
 use futures::StreamExt;
@@ -572,13 +573,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
             })
             .collect();
         let mut cached_channels = self.cache.guild_channels(self.test_guild_id).await?;
-        assert_eq!(channels, cached_channels);
+        assert_vecs_eq(&channels, &cached_channels);
 
         cached_channels = vec![];
         for channel in &channels {
             cached_channels.push(self.cache.channel(channel.id).await?.unwrap());
         }
-        assert_eq!(channels, cached_channels);
+        assert_vecs_eq(&channels, &cached_channels);
 
         Ok(())
     }
@@ -602,7 +603,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
         let cached_permission_overwrites =
             self.cache.permission_overwrites(first_channel.id).await?;
 
-        assert_eq!(permission_overwrites, cached_permission_overwrites);
+        assert_vecs_eq(&permission_overwrites, &cached_permission_overwrites);
 
         Ok(())
     }
@@ -667,24 +668,22 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
             let cached_reactions = self.cache.reactions(message.id).await?;
             let current_user_id = self.cache.current_user().await?.id;
-            assert_eq!(
-                message
+            assert_vecs_eq(
+                &message
                     .reactions
                     .iter()
-                    .map(|reaction| {
-                        CachedReaction {
-                            channel_id: message.channel_id,
-                            emoji: match &reaction.emoji {
-                                ReactionType::Custom { id, .. } => id.to_string(),
-                                ReactionType::Unicode { name } => name.clone(),
-                            },
-                            guild_id: message.guild_id,
-                            message_id: message.id,
-                            user_id: current_user_id,
-                        }
+                    .map(|reaction| CachedReaction {
+                        channel_id: message.channel_id,
+                        emoji: match &reaction.emoji {
+                            ReactionType::Custom { id, .. } => id.to_string(),
+                            ReactionType::Unicode { name } => name.clone(),
+                        },
+                        guild_id: message.guild_id,
+                        message_id: message.id,
+                        user_id: current_user_id,
                     })
                     .collect::<Vec<_>>(),
-                cached_reactions
+                &cached_reactions,
             );
         }
 
@@ -710,9 +709,10 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .await?;
         let roles = self.testing_guild_roles().await?;
         let mut cached_members = self.cache.guild_members(self.test_guild_id).await?;
-        assert_eq!(
-            members.iter().map(CachedMember::from).collect::<Vec<_>>(),
-            cached_members
+
+        assert_vecs_eq(
+            &members.iter().map(CachedMember::from).collect::<Vec<_>>(),
+            &cached_members,
         );
 
         cached_members = vec![];
@@ -734,14 +734,15 @@ impl<T: Cache + Send + Sync> Tester<T> {
                         .clone(),
                 );
             }
-            assert_eq!(
-                member_roles
+            assert_vecs_eq(
+                &member_roles
                     .into_iter()
                     .map(|role| CachedRole::from_role(role, self.test_guild_id))
                     .collect::<Vec<_>>(),
-                self.cache
+                &self
+                    .cache
                     .member_roles(member.user.id, self.test_guild_id)
-                    .await?
+                    .await?,
             );
         }
 
@@ -785,7 +786,8 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .map(|role| CachedRole::from_role(role, self.test_guild_id))
             .collect();
         let mut cached_roles = self.cache.guild_roles(self.test_guild_id).await?;
-        assert_eq!(roles, cached_roles);
+
+        assert_vecs_eq(&roles, &cached_roles);
 
         cached_roles = vec![];
         for role in &roles {
@@ -804,12 +806,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         let emojis = self.testing_guild_emojis().await?;
         let mut cached_emojis = self.cache.guild_emojis(self.test_guild_id).await?;
-        assert_eq!(
-            emojis
+
+        assert_vecs_eq(
+            &emojis
                 .iter()
                 .map(|emoji| CachedEmoji::from_emoji(emoji, self.test_guild_id))
                 .collect::<Vec<_>>(),
-            cached_emojis
+            &cached_emojis,
         );
 
         cached_emojis = vec![];
@@ -900,4 +903,12 @@ impl<T: Cache + Send + Sync> Tester<T> {
     //         .models()
     //         .await?)
     // }
+}
+
+/// Asserts that the vectors are equal ignoring the order
+fn assert_vecs_eq<T: PartialEq + Debug>(vec_a: &Vec<T>, vec_b: &Vec<T>) {
+    assert_eq!(vec_a.len(), vec_b.len());
+    for a in vec_a {
+        assert!(vec_b.contains(a), "{a:#?} is not in {vec_b:#?}");
+    }
 }

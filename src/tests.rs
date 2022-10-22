@@ -338,13 +338,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 Attachment {
                     description: Some("first testing attachment".to_owned()),
                     file: IMAGE_HASH.as_bytes().to_owned(),
-                    filename: "testing_attachment_first".to_owned(),
+                    filename: "testing_attachment_first.png".to_owned(),
                     id: 0,
                 },
                 Attachment {
                     description: Some("second testing attachment".to_owned()),
                     file: IMAGE_HASH.as_bytes().to_owned(),
-                    filename: "testing_attachment_second".to_owned(),
+                    filename: "testing_attachment_second.png".to_owned(),
                     id: 1,
                 },
             ])?

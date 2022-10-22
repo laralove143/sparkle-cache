@@ -82,7 +82,7 @@ pub mod model;
 pub mod tests;
 
 /// Used to create unique IDs when necessary
-static ID_COUNTER: AtomicI64 = AtomicI64::new(0);
+static ID_COUNTER: AtomicI64 = AtomicI64::new(1);
 
 /// Returns a unique ID by adding 1 to [`ID_COUNTER`]
 fn unique_id() -> i64 {

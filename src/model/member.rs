@@ -111,7 +111,7 @@ impl From<&Member> for CachedMember {
             premium_since: member.premium_since,
             accent_color: member.user.accent_color,
             system: member.user.system,
-            avatar: member.avatar,
+            avatar: member.user.avatar,
             banner: member.user.banner,
             bot: member.user.bot,
             discriminator: member.user.discriminator,

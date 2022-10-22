@@ -614,13 +614,19 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.update().await?;
 
         let first_channel_id = self.testing_guild_channels().await?.first().unwrap().id;
-        let messages = self
+        let messages: Vec<_> = self
             .http
             .channel_messages(first_channel_id)
             .exec()
             .await?
             .models()
-            .await?;
+            .await?
+            .into_iter()
+            .map(|mut message| {
+                message.guild_id = Some(self.test_guild_id);
+                message
+            })
+            .collect();
         let mut cached_messages = self.cache.channel_messages(first_channel_id, 0).await?;
         assert_eq!(
             messages.iter().map(CachedMessage::from).collect::<Vec<_>>(),

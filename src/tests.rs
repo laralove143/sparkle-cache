@@ -654,8 +654,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
         cached_messages = vec![];
         for message in &messages {
             let mut cached_message = self.cache.message(message.id).await?.unwrap();
-            cached_message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
-            cached_message.edited_timestamp = message
+            cached_message.timestamp =
+                Timestamp::from_secs(cached_message.timestamp.as_secs()).unwrap();
+            cached_message.edited_timestamp = cached_message
                 .edited_timestamp
                 .map(|ts| Timestamp::from_secs(ts.as_secs()).unwrap());
             cached_messages.push(cached_message);
@@ -729,15 +730,30 @@ impl<T: Cache + Send + Sync> Tester<T> {
     async fn assert_members_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
-        let members = self
+        let members: Vec<_> = self
             .http
             .guild_members(self.test_guild_id)
             .exec()
             .await?
             .models()
-            .await?;
+            .await?
+            .into_iter()
+            .map(|mut member| {
+                member.joined_at = Timestamp::from_secs(member.joined_at.as_secs()).unwrap();
+                member
+            })
+            .collect();
         let roles = self.testing_guild_roles().await?;
-        let mut cached_members = self.cache.guild_members(self.test_guild_id).await?;
+        let mut cached_members = self
+            .cache
+            .guild_members(self.test_guild_id)
+            .await?
+            .into_iter()
+            .map(|mut member| {
+                member.joined_at = Timestamp::from_secs(member.joined_at.as_secs()).unwrap();
+                member
+            })
+            .collect();
 
         assert_vecs_eq(
             &members.iter().map(CachedMember::from).collect::<Vec<_>>(),
@@ -746,12 +762,14 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         cached_members = vec![];
         for member in &members {
-            cached_members.push(
-                self.cache
-                    .member(member.user.id, self.test_guild_id)
-                    .await?
-                    .unwrap(),
-            );
+            let mut cached_member = self
+                .cache
+                .member(member.user.id, self.test_guild_id)
+                .await?
+                .unwrap();
+            cached_member.joined_at =
+                Timestamp::from_secs(cached_member.joined_at.as_secs()).unwrap();
+            cached_members.push(cached_member);
 
             let mut member_roles = vec![];
             for role_id in &member.roles {

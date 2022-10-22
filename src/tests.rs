@@ -865,7 +865,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .await?
             .models()
             .await?;
-        channels.sort_unstable_by(|old, new| old.position.unwrap().cmp(&new.position.unwrap()));
+        channels.sort_unstable_by(|old, new| new.position.unwrap().cmp(&old.position.unwrap()));
 
         Ok(channels)
     }

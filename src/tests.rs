@@ -925,7 +925,8 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .exec()
             .await?
             .models()
-            .await?;
+            .await?
+            .retain(|role| role.id != self.test_guild_id);
 
         Ok(roles)
     }

@@ -626,6 +626,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .map(|mut message| {
                 message.guild_id = Some(self.test_guild_id);
                 message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
+                message.edited_timestamp = message
+                    .edited_timestamp
+                    .map(|ts| Timestamp::from_secs(ts.as_secs()));
                 message
             })
             .collect();
@@ -636,6 +639,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .into_iter()
             .map(|mut message| {
                 message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
+                message.edited_timestamp = message
+                    .edited_timestamp
+                    .map(|ts| Timestamp::from_secs(ts.as_secs()));
                 message
             })
             .collect();
@@ -648,6 +654,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
         for message in &messages {
             let mut cached_message = self.cache.message(message.id).await?.unwrap();
             cached_message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
+            cached_messages.edited_timestamp = message
+                .edited_timestamp
+                .map(|ts| Timestamp::from_secs(ts.as_secs()));
             cached_messages.push(cached_message);
 
             let cached_embeds = self.cache.embeds(message.id).await?;

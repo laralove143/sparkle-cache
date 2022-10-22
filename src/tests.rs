@@ -919,14 +919,14 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
     /// Returns the roles in the testing guild
     async fn testing_guild_roles(&self) -> Result<Vec<Role>, anyhow::Error> {
-        let roles: Vec<_> = self
+        let mut roles = self
             .http
             .roles(self.test_guild_id)
             .exec()
             .await?
             .models()
-            .await?
-            .retain(|role| role.id != self.test_guild_id);
+            .await?;
+        roles.retain(|role| role.id.cast() != self.test_guild_id);
 
         Ok(roles)
     }

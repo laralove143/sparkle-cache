@@ -611,6 +611,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
     /// Asserts that the cached messages and the messages in the testing guild
     /// are equal
+    #[allow(clippy::too_many_lines)]
     async fn assert_messages_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
@@ -628,7 +629,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
                 message.edited_timestamp = message
                     .edited_timestamp
-                    .map(|ts| Timestamp::from_secs(ts.as_secs()));
+                    .map(|ts| Timestamp::from_secs(ts.as_secs()).unwrap());
                 message
             })
             .collect();
@@ -641,7 +642,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
                 message.edited_timestamp = message
                     .edited_timestamp
-                    .map(|ts| Timestamp::from_secs(ts.as_secs()));
+                    .map(|ts| Timestamp::from_secs(ts.as_secs()).unwrap());
                 message
             })
             .collect();
@@ -654,9 +655,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
         for message in &messages {
             let mut cached_message = self.cache.message(message.id).await?.unwrap();
             cached_message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
-            cached_messages.edited_timestamp = message
+            cached_message.edited_timestamp = message
                 .edited_timestamp
-                .map(|ts| Timestamp::from_secs(ts.as_secs()));
+                .map(|ts| Timestamp::from_secs(ts.as_secs()).unwrap());
             cached_messages.push(cached_message);
 
             let cached_embeds = self.cache.embeds(message.id).await?;

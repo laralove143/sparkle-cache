@@ -30,6 +30,7 @@ use twilight_model::{
         permission_overwrite::{PermissionOverwrite, PermissionOverwriteType},
     },
     id::{marker::GuildMarker, Id},
+    util::Timestamp,
 };
 
 use crate::{
@@ -624,6 +625,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .into_iter()
             .map(|mut message| {
                 message.guild_id = Some(self.test_guild_id);
+                message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
                 message
             })
             .collect();

@@ -646,7 +646,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         cached_messages = vec![];
         for message in &messages {
-            cached_messages.push(self.cache.message(message.id).await?.unwrap());
+            let mut cached_message = self.cache.message(message.id).await?.unwrap();
+            cached_message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
+            cached_messages.push(cached_message);
 
             let cached_embeds = self.cache.embeds(message.id).await?;
             let embeds: Vec<_> = message

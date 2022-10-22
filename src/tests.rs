@@ -785,9 +785,9 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 &member_roles
                     .into_iter()
                     .map(|role| {
-                        let mut role = CachedRole::from_role(role, self.test_guild_id);
-                        role.user_id = member.user.id;
-                        role
+                        let mut cached_role = CachedRole::from_role(role, self.test_guild_id);
+                        cached_role.user_id = Some(member.user.id);
+                        cached_role
                     })
                     .collect::<Vec<_>>(),
                 &self

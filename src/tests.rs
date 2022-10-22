@@ -858,13 +858,14 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
     /// Returns the channels in the testing guild
     async fn testing_guild_channels(&self) -> Result<Vec<Channel>, anyhow::Error> {
-        let channels = self
+        let mut channels = self
             .http
             .guild_channels(self.test_guild_id)
             .exec()
             .await?
             .models()
             .await?;
+        channels.sort_unstable_by(|old, new| old.position.unwrap().cmp(&new.position.unwrap()));
 
         Ok(channels)
     }

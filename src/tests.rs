@@ -345,7 +345,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
                     description: Some("second testing attachment".to_owned()),
                     file: IMAGE_HASH.as_bytes().to_owned(),
                     filename: "testing_attachment_second".to_owned(),
-                    id: 0,
+                    id: 1,
                 },
             ])?
             // .sticker_ids(&[self.testing_guild_stickers().await?.first().unwrap().id])?

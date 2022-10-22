@@ -784,12 +784,24 @@ impl<T: Cache + Send + Sync> Tester<T> {
             assert_vecs_eq(
                 &member_roles
                     .into_iter()
-                    .map(|role| CachedRole::from_role(role, self.test_guild_id))
+                    .map(|role| {
+                        let mut role = CachedRole::from_role(role, self.test_guild_id);
+                        role.user_id = member.user.id;
+                        role
+                    })
                     .collect::<Vec<_>>(),
                 &self
                     .cache
                     .member_roles(member.user.id, self.test_guild_id)
-                    .await?,
+                    .await?
+                    .into_iter()
+                    .map(|mut role| {
+                        if role.tags_premium_subscriber == Some(false) {
+                            role.tags_premium_subscriber = None;
+                        }
+                        role
+                    })
+                    .collect::<Vec<_>>(),
             );
         }
 

@@ -629,7 +629,16 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 message
             })
             .collect();
-        let mut cached_messages = self.cache.channel_messages(first_channel_id, 0).await?;
+        let mut cached_messages = self
+            .cache
+            .channel_messages(first_channel_id, 0)
+            .await?
+            .into_iter()
+            .map(|mut message| {
+                message.timestamp = Timestamp::from_secs(message.timestamp.as_secs()).unwrap();
+                message
+            })
+            .collect();
         assert_eq!(
             messages.iter().map(CachedMessage::from).collect::<Vec<_>>(),
             cached_messages

@@ -828,6 +828,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
         cached_guild
             .features
             .retain(|feature| feature != &GuildFeature::Unknown(String::new()));
+        cached_guild.joined_at = None;
 
         assert_eq!(cached_guild, CachedGuild::from(&guild));
 

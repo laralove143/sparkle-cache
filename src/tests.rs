@@ -980,7 +980,7 @@ fn assert_vecs_eq<T: PartialEq + Debug>(vec_a: &Vec<T>, vec_b: &Vec<T>) {
     assert_eq!(
         vec_a.len(),
         vec_b.len(),
-        "{vec_a}\nand\n{vec_b}\nhave different lengths"
+        "{vec_a:#?}\nand\n{vec_b:#?}\nhave different lengths"
     );
     for a in vec_a {
         assert!(vec_b.contains(a), "{a:#?}\nis not in\n{vec_b:#?}");

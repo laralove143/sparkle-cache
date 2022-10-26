@@ -152,7 +152,7 @@ pub trait Cache: Backend {
                     self.upsert_sticker(sticker.into()).await?;
                 }
                 for role in &guild.roles {
-                    self.upsert_role(CachedRole::from_role(role.clone(), guild.id))
+                    self.insert_role(CachedRole::from_role(role.clone(), guild.id))
                         .await?;
                 }
                 for member in &guild.members {
@@ -354,11 +354,11 @@ pub trait Cache: Backend {
                 self.set_current_user(user.0.clone()).await?;
             }
             Event::RoleCreate(role) => {
-                self.upsert_role(CachedRole::from_role(role.role.clone(), role.guild_id))
+                self.insert_role(CachedRole::from_role(role.role.clone(), role.guild_id))
                     .await?;
             }
             Event::RoleUpdate(role) => {
-                self.upsert_role(CachedRole::from_role(role.role.clone(), role.guild_id))
+                self.update_roles(CachedRole::from_role(role.role.clone(), role.guild_id))
                     .await?;
             }
             Event::RoleDelete(role) => {
@@ -725,7 +725,7 @@ pub trait Cache: Backend {
                 .await?
                 .ok_or(Error::MemberRoleMissing { user_id, role_id })?;
             role.user_id = Some(user_id);
-            self.upsert_role(role).await?;
+            self.insert_role(role).await?;
         }
 
         Ok(())

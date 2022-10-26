@@ -280,13 +280,18 @@ pub trait Backend {
     /// Remove a channel from the cache
     async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
-    /// Add or update a role to the cache
+    /// Add a role to the cache
+    async fn insert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
+
+    /// Update roles in the cache
     ///
-    /// Only the combination of role ID and user ID is unique, they're not
-    /// unique on their own
+    /// A separate method is necessary to update roles of users
     ///
     /// When updating roles, make sure not to update the user ID field
-    async fn upsert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
+    ///
+    /// This should be something like `UPDATE roles SET (...) = (...) WHERE id =
+    /// ?`
+    async fn update_roles(&self, role: CachedRole) -> Result<(), Self::Error>;
 
     /// Remove a role from the cache
     async fn delete_role(&self, role_id: Id<RoleMarker>) -> Result<(), Self::Error>;

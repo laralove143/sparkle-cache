@@ -91,15 +91,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
             http.delete_guild(guild.id).exec().await?;
         };
 
-        let everyone_role = RoleFields {
-            color: None,
-            hoist: None,
-            id: Id::new(10),
-            mentionable: None,
-            name: "@everyone".to_owned(),
-            permissions: None,
-            position: None,
-        };
         let role = RoleFields {
             color: Some(1),
             hoist: Some(true),
@@ -147,7 +138,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .default_message_notifications(DefaultMessageNotificationLevel::All)
             .explicit_content_filter(ExplicitContentFilter::AllMembers)
             .icon(IMAGE_HASH)
-            .add_role(everyone_role)
             .add_role(role)
             .afk_channel_id(voice_channel.id)
             .afk_timeout(60)

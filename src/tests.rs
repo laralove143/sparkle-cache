@@ -817,13 +817,17 @@ impl<T: Cache + Send + Sync> Tester<T> {
     async fn assert_guilds_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
-        let guild = self
+        let mut guild = self
             .http
             .guild(self.test_guild_id)
             .exec()
             .await?
             .model()
             .await?;
+        if guild.widget_enabled == Some(false) {
+            guild.widget_enabled = None;
+        }
+
         let mut cached_guild = self.cache.guild(self.test_guild_id).await?.unwrap();
         cached_guild
             .features

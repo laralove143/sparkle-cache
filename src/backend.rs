@@ -281,6 +281,8 @@ pub trait Backend {
     async fn delete_guild(&self, guild_id: Id<GuildMarker>) -> Result<(), Self::Error>;
 
     /// Add a role to the cache
+    ///
+    /// The role ID is unique only if the role's user ID is `None`
     async fn insert_role(&self, role: CachedRole) -> Result<(), Self::Error>;
 
     /// Update roles in the cache

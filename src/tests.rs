@@ -22,8 +22,8 @@ use twilight_model::{
     },
     gateway::Intents,
     guild::{
-        DefaultMessageNotificationLevel, Emoji, ExplicitContentFilter, Permissions, Role,
-        SystemChannelFlags,
+        DefaultMessageNotificationLevel, Emoji, ExplicitContentFilter, GuildFeature, Permissions,
+        Role, SystemChannelFlags,
     },
     http::{
         attachment::Attachment,
@@ -824,11 +824,12 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .await?
             .model()
             .await?;
+        let mut cached_guild = self.cache.guild(self.test_guild_id).await?.unwrap();
+        cached_guild
+            .features
+            .retain(|feature| feature != &GuildFeature::Unknown(String::new()));
 
-        assert_eq!(
-            self.cache.guild(self.test_guild_id).await?.unwrap(),
-            CachedGuild::from(&guild),
-        );
+        assert_eq!(cached_guild, CachedGuild::from(&guild));
 
         Ok(())
     }

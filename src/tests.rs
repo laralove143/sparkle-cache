@@ -937,7 +937,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .await?
             .models()
             .await?;
-        roles.retain(|role| role.id.cast() != self.test_guild_id);
+        roles.reverse();
 
         Ok(roles)
     }

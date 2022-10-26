@@ -866,7 +866,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         cached_roles = vec![];
         for role in &roles {
-            cached_roles.push(self.cache.role(role.id).await?.unwrap());
+            let mut cached_role = self.cache.role(role.id).await?.unwrap();
+            if cached_role.tags_premium_subscriber == Some(false) {
+                cached_role.tags_premium_subscriber = None;
+            }
+            cached_roles.push(cached_role);
         }
 
         assert_eq!(roles, cached_roles);

@@ -47,9 +47,10 @@ sparkle-cache = "x"
 
 If the test error is related to this crate, please create an issue
 
+The tests currently don't cover stickers because
+of [a bug in Twilight](https://github.com/twilight-rs/twilight/issues/1954)
+
 ## Your help is needed
 
 Any feedback or bug reports will be very useful in further development, the code is in a working state with all
 essential methods done but there's many possible additions that will be added as you request them!
-
-It also can't be tested yet since there's no library that implements the given traits

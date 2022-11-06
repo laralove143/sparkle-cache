@@ -1,9 +1,9 @@
 #![allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
 
-use core::fmt::Debug;
-use std::time::Instant;
+use core::{fmt::Debug, time::Duration};
 
 use futures::StreamExt;
+use tokio::{select, time::sleep};
 use twilight_gateway::{shard::Events, Shard};
 use twilight_http::{
     self,
@@ -478,13 +478,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
     }
 
     /// Updates the cache with the pending events for 1 second
+    #[allow(clippy::integer_arithmetic, clippy::arithmetic_side_effects)]
     async fn update(&mut self) -> Result<(), anyhow::Error> {
-        let started = Instant::now();
-
-        while let Some(event) = self.events.next().await {
-            self.cache.update(&event).await?;
-
-            if started.elapsed().as_secs() > 1 {
+        select! {
+            Some(event) = self.events.next() => {
+                self.cache.update(&event).await?;
+            }
+            _ = sleep(Duration::from_secs(1)) => {
                 return Ok(());
             }
         }

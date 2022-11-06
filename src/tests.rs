@@ -883,7 +883,15 @@ impl<T: Cache + Send + Sync> Tester<T> {
     async fn assert_emojis_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
-        let emojis = self.testing_guild_emojis().await?;
+        let emojis: Vec<_> = self
+            .testing_guild_emojis()
+            .await?
+            .into_iter()
+            .map(|mut emoji| {
+                emoji.user = None;
+                emoji
+            })
+            .collect();
         let mut cached_emojis = self.cache.guild_emojis(self.test_guild_id).await?;
 
         assert_vecs_eq(

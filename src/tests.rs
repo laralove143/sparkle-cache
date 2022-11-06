@@ -480,14 +480,14 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// Updates the cache with the pending events for 1 second
     #[allow(clippy::integer_arithmetic, clippy::arithmetic_side_effects)]
     async fn update(&mut self) -> Result<(), anyhow::Error> {
-        select! {
-            Some(event) = self.events.next() => {
+        let handle = tokio::spawn(async {
+            while let Some(event) = self.events.next() {
                 self.cache.update(&event).await?;
             }
-            _ = sleep(Duration::from_secs(1)) => {
-                return Ok(());
-            }
-        }
+        });
+
+        sleep(Duration::from_secs(1)).await;
+        handle.abort();
 
         Ok(())
     }

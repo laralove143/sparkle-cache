@@ -3,7 +3,7 @@
 use core::{fmt::Debug, time::Duration};
 
 use futures::StreamExt;
-use tokio::{select, time::sleep};
+use tokio::time::timeout;
 use twilight_gateway::{shard::Events, Shard};
 use twilight_http::{
     self,
@@ -480,14 +480,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
     /// Updates the cache with the pending events for 1 second
     #[allow(clippy::integer_arithmetic, clippy::arithmetic_side_effects)]
     async fn update(&mut self) -> Result<(), anyhow::Error> {
-        let handle = tokio::spawn(async {
-            while let Some(event) = self.events.next() {
+        let _elapsed = timeout(Duration::from_secs(1), async {
+            while let Some(event) = self.events.next().await {
                 self.cache.update(&event).await?;
             }
-        });
-
-        sleep(Duration::from_secs(1)).await;
-        handle.abort();
+            Ok::<_, anyhow::Error>(())
+        })
+        .await;
 
         Ok(())
     }

@@ -40,6 +40,12 @@ This means this data can't be cached for now:
 
 This doesn't depend tightly on Twilight, you can easily fork this and change the Twilight models used in it
 
+## Versioning
+
+Because it tries to follow Twilight's version, minor versions will include breaking changes. This means you should pin
+it to the latest version. For example instead of `sparkle-cache = "0.14"` do `sparkle-cache = "0.14.0"`. Of course try
+to keep it at the latest version as updates usually contain bugfixes
+
 ## Features
 
 ### Tests

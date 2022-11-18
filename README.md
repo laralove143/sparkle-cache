@@ -1,5 +1,9 @@
 # Sparkle Cache
 
+[GitHub](https://github.com/laralove143/sparkle-cache)
+[crates.io](https://crates.io/crates/sparkle-cache)
+[docs.rs](https://docs.rs/sparkle-cache/latest)
+
 A backend-agnostic Discord cache implementation for the Twilight ecosystem
 
 It provides a `Cache` trait that provides methods to get data from the cache and a `Backend` trait used to add support

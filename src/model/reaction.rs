@@ -1,5 +1,6 @@
 use twilight_model::{
-    channel::{Reaction, ReactionType},
+    channel::message::ReactionType,
+    gateway::GatewayReaction,
     id::{
         marker::{ChannelMarker, GuildMarker, MessageMarker, UserMarker},
         Id,
@@ -24,8 +25,8 @@ pub struct CachedReaction {
     pub user_id: Id<UserMarker>,
 }
 
-impl From<&Reaction> for CachedReaction {
-    fn from(reaction: &Reaction) -> Self {
+impl From<&GatewayReaction> for CachedReaction {
+    fn from(reaction: &GatewayReaction) -> Self {
         Self {
             channel_id: reaction.channel_id,
             emoji: match &reaction.emoji {

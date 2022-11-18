@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 pub use error::Error;
 use twilight_model::{
-    channel::{permission_overwrite::PermissionOverwrite, Channel, ReactionType, StageInstance},
+    channel::{
+        message::ReactionType, permission_overwrite::PermissionOverwrite, Channel, StageInstance,
+    },
     gateway::event::Event,
     guild::Permissions,
     id::{

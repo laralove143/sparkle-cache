@@ -1,7 +1,6 @@
 use twilight_model::{
     channel::{
-        embed::{Embed, EmbedField},
-        message::{MessageActivityType, MessageFlags, MessageType},
+        message::{embed::EmbedField, Embed, MessageActivityType, MessageFlags, MessageType},
         Attachment, Message,
     },
     gateway::payload::incoming::MessageUpdate,

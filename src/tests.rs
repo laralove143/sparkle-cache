@@ -17,8 +17,8 @@ use twilight_http::{
 };
 use twilight_model::{
     channel::{
-        embed::{Embed, EmbedField},
-        Channel, ChannelType, ReactionType,
+        message::{embed::EmbedField, Embed, ReactionType},
+        Channel, ChannelType,
     },
     gateway::Intents,
     guild::{
@@ -81,14 +81,13 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         if let Some(guild) = http
             .current_user_guilds()
-            .exec()
             .await?
             .models()
             .await?
             .iter()
             .find(|guild| guild.name == NAME)
         {
-            http.delete_guild(guild.id).exec().await?;
+            http.delete_guild(guild.id).await?;
         };
 
         let role = RoleFields {
@@ -148,13 +147,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 GuildChannelFields::Text(text_channel),
                 GuildChannelFields::Voice(voice_channel),
             ])?
-            .exec()
             .await?
             .model()
             .await?;
 
         http.create_emoji(guild.id, "testing_emoji", IMAGE_HASH)
-            .exec()
             .await?
             .model()
             .await?;
@@ -203,7 +200,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 Some(IMAGE_HASH)
             })
             .username(&name)?
-            .exec()
             .await?
             .model()
             .await?;
@@ -221,20 +217,18 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.http
             .update_channel(first_channel_id)
             .name("first_text_new")?
-            .exec()
             .await?;
         self.assert_channels_eq().await?;
 
         let new_channel = self
             .http
             .create_guild_channel(self.test_guild_id, "second_text")?
-            .exec()
             .await?
             .model()
             .await?;
         self.assert_channels_eq().await?;
 
-        self.http.delete_channel(new_channel.id).exec().await?;
+        self.http.delete_channel(new_channel.id).await?;
         self.assert_channels_eq().await?;
 
         Ok(())
@@ -257,14 +251,12 @@ impl<T: Cache + Send + Sync> Tester<T> {
                     kind: PermissionOverwriteType::Role,
                 },
             )
-            .exec()
             .await?;
         self.assert_permission_overwrites_eq().await?;
 
         self.http
             .delete_channel_permission(first_channel_id)
             .role(first_role_id.cast())
-            .exec()
             .await?;
         self.assert_channels_eq().await?;
 
@@ -340,7 +332,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
                 },
             ])?
             // .sticker_ids(&[self.testing_guild_stickers().await?.first().unwrap().id])?
-            .exec()
             .await?
             .model()
             .await?;
@@ -349,7 +340,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.http
             .update_message(first_channel_id, new_message.id)
             .content(None)?
-            .exec()
             .await?;
         self.assert_messages_eq().await?;
 
@@ -363,19 +353,16 @@ impl<T: Cache + Send + Sync> Tester<T> {
                     name: Some(&first_emoji.name),
                 },
             )
-            .exec()
             .await?;
         self.assert_messages_eq().await?;
 
         self.http
             .delete_all_reactions(first_channel_id, new_message.id)
-            .exec()
             .await?;
         self.assert_messages_eq().await?;
 
         self.http
             .delete_message(first_channel_id, new_message.id)
-            .exec()
             .await?;
         self.assert_messages_eq().await?;
 
@@ -391,13 +378,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         self.http
             .add_guild_member_role(self.test_guild_id, current_user_id, first_role_id)
-            .exec()
             .await?;
         self.assert_members_eq().await?;
 
         self.http
             .remove_guild_member_role(self.test_guild_id, current_user_id, first_role_id)
-            .exec()
             .await?;
         self.assert_members_eq().await?;
 
@@ -416,7 +401,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .icon(None)
             .afk_channel_id(None)
             .system_channel(None)
-            .exec()
             .await?;
         self.assert_guilds_eq().await?;
 
@@ -432,7 +416,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.http
             .update_role(self.test_guild_id, first_role_id)
             .name(Some("first new"))
-            .exec()
             .await?;
         self.assert_roles_eq().await?;
 
@@ -440,7 +423,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
             .http
             .create_role(self.test_guild_id)
             .name("second")
-            .exec()
             .await?
             .model()
             .await?;
@@ -448,7 +430,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
         self.http
             .delete_role(self.test_guild_id, new_role.id)
-            .exec()
             .await?;
         self.assert_roles_eq().await?;
 
@@ -464,13 +445,11 @@ impl<T: Cache + Send + Sync> Tester<T> {
         self.http
             .update_emoji(self.test_guild_id, first_emoji_id)
             .name("testing_emoji_new")
-            .exec()
             .await?;
         self.assert_emojis_eq().await?;
 
         self.http
             .delete_emoji(self.test_guild_id, first_emoji_id)
-            .exec()
             .await?;
         self.assert_emojis_eq().await?;
 
@@ -518,7 +497,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
     async fn assert_current_users_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
-        let mut current_user = self.http.current_user().exec().await?.model().await?;
+        let mut current_user = self.http.current_user().await?.model().await?;
         let mut cached_current_user = self.cache.current_user().await?;
         current_user.locale = None;
         cached_current_user.locale = None;
@@ -608,7 +587,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
         let messages: Vec<_> = self
             .http
             .channel_messages(first_channel_id)
-            .exec()
             .await?
             .models()
             .await?
@@ -722,7 +700,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
         let members: Vec<_> = self
             .http
             .guild_members(self.test_guild_id)
-            .exec()
             .await?
             .models()
             .await?
@@ -806,13 +783,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
     async fn assert_guilds_eq(&mut self) -> Result<(), anyhow::Error> {
         self.update().await?;
 
-        let mut guild = self
-            .http
-            .guild(self.test_guild_id)
-            .exec()
-            .await?
-            .model()
-            .await?;
+        let mut guild = self.http.guild(self.test_guild_id).await?.model().await?;
         if guild.widget_enabled == Some(false) {
             guild.widget_enabled = None;
         }
@@ -947,7 +918,6 @@ impl<T: Cache + Send + Sync> Tester<T> {
         let mut channels = self
             .http
             .guild_channels(self.test_guild_id)
-            .exec()
             .await?
             .models()
             .await?;
@@ -958,13 +928,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
     /// Returns the roles in the testing guild
     async fn testing_guild_roles(&self) -> Result<Vec<Role>, anyhow::Error> {
-        let mut roles = self
-            .http
-            .roles(self.test_guild_id)
-            .exec()
-            .await?
-            .models()
-            .await?;
+        let mut roles = self.http.roles(self.test_guild_id).await?.models().await?;
         roles.reverse();
 
         Ok(roles)
@@ -972,13 +936,7 @@ impl<T: Cache + Send + Sync> Tester<T> {
 
     /// Returns the emojis in the testing guild
     async fn testing_guild_emojis(&self) -> Result<Vec<Emoji>, anyhow::Error> {
-        Ok(self
-            .http
-            .emojis(self.test_guild_id)
-            .exec()
-            .await?
-            .models()
-            .await?)
+        Ok(self.http.emojis(self.test_guild_id).await?.models().await?)
     }
 
     // /// Returns the stickers in the testing guild

@@ -5,6 +5,13 @@ A backend-agnostic Discord cache implementation for the Twilight ecosystem
 It provides a `Cache` trait that provides methods to get data from the cache and a `Backend` trait used to add support
 for a backend, refer to the documentation of each trait for more
 
+## Usage
+
+This crate is for adding support for a backend, if you just need to use the cache, you should use one of the crates:
+
+- [Sparkle Cache Postgres](https://github.com/laralove143/sparkle-cache-postgres)
+- Please create a PR to add your crate to this list
+
 ## Compatibility
 
 The models don't use any arrays and every field is a primitive type, this makes it compatible with schematic backends

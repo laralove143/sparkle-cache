@@ -64,7 +64,7 @@ sparkle-cache = "x"
 
 If the test error is related to this crate, please create an issue
 
-The tests currently don't cover stickers because
+Stickers are currently not cached as they can't be tested because
 of [a bug in Twilight](https://github.com/twilight-rs/twilight/issues/1954)
 
 ## Your help is needed

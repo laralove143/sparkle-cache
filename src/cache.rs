@@ -150,9 +150,9 @@ pub trait Cache: Backend {
                     self.upsert_emoji(CachedEmoji::from_emoji(emoji, guild.id))
                         .await?;
                 }
-                for sticker in &guild.stickers {
-                    self.upsert_sticker(sticker.into()).await?;
-                }
+                // for sticker in &guild.stickers {
+                //     self.upsert_sticker(sticker.into()).await?;
+                // }
                 for role in &guild.roles {
                     self.insert_role(CachedRole::from_role(role.clone(), guild.id))
                         .await?;
@@ -184,7 +184,7 @@ pub trait Cache: Backend {
                     }
                     self.delete_guild_channels(guild.id).await?;
                     self.delete_guild_emojis(guild.id).await?;
-                    self.delete_guild_stickers(guild.id).await?;
+                    // self.delete_guild_stickers(guild.id).await?;
                     self.delete_guild_members(guild.id).await?;
                     self.delete_guild_presences(guild.id).await?;
                     self.delete_guild_roles(guild.id).await?;
@@ -199,12 +199,12 @@ pub trait Cache: Backend {
                         .await?;
                 }
             }
-            Event::GuildStickersUpdate(stickers) => {
-                self.delete_guild_stickers(stickers.guild_id).await?;
-                for sticker in &stickers.stickers {
-                    self.upsert_sticker(sticker.into()).await?;
-                }
-            }
+            // Event::GuildStickersUpdate(stickers) => {
+            // self.delete_guild_stickers(stickers.guild_id).await?;
+            // for sticker in &stickers.stickers {
+            //     self.upsert_sticker(sticker.into()).await?;
+            // }
+            // }
             Event::MemberAdd(member) => {
                 self.add_member_roles(member.user.id, member.roles.clone())
                     .await?;
@@ -241,16 +241,16 @@ pub trait Cache: Backend {
                     ))
                     .await?;
                 }
-                for message_sticker in message.sticker_items.clone() {
-                    let sticker =
-                        if let Some(mut cached_sticker) = self.sticker(message_sticker.id).await? {
-                            cached_sticker.message_id = Some(message.id);
-                            cached_sticker
-                        } else {
-                            CachedSticker::from_message_sticker(message_sticker, message.id)
-                        };
-                    self.upsert_sticker(sticker).await?;
-                }
+                // for message_sticker in message.sticker_items.clone() {
+                //     let sticker =
+                //         if let Some(mut cached_sticker) =
+                // self.sticker(message_sticker.id).await? {
+                // cached_sticker.message_id = Some(message.id);
+                // cached_sticker         } else {
+                //             CachedSticker::from_message_sticker(message_sticker, message.id)
+                //         };
+                //     self.upsert_sticker(sticker).await?;
+                // }
                 for embed in message.embeds.clone() {
                     let fields = embed.fields.clone();
                     let cached_embed = CachedEmbed::from_embed(embed, message.id);
@@ -746,7 +746,7 @@ pub trait Cache: Backend {
         }
         self.delete_message_attachments(message_id).await?;
         self.delete_message_reactions(message_id).await?;
-        self.delete_message_stickers(message_id).await?;
+        // self.delete_message_stickers(message_id).await?;
         self.delete_message(message_id).await?;
         Ok(())
     }
